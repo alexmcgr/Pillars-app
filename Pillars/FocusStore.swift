@@ -11,11 +11,13 @@ import SwiftUI
 class FocusStore: ObservableObject {
     @Published var selections: [String: DailyFocus] = [:]
     
-    // Use App Group for sharing with widget
-    private let userDefaults = UserDefaults(suiteName: "group.punchline.Pillars") ?? UserDefaults.standard
+    // Use standard UserDefaults for data persistence
+    private let userDefaults = UserDefaults.standard
     private let selectionsKey = "focusSelections"
+    private let migrationKey = "dataMigratedToStandard"
     
     init() {
+        migrateIfNeeded()
         loadSelections()
     }
     
@@ -34,11 +36,67 @@ class FocusStore: ObservableObject {
         let calendar = Calendar.current
         let normalizedDate = calendar.startOfDay(for: date)
         let key = dateKey(for: normalizedDate)
-        let focus = DailyFocus(date: normalizedDate, choiceId: choiceId)
+        
+        // Preserve existing journal entry if there is one
+        let existingJournal = selections[key]?.journalEntry
+        var focus = DailyFocus(date: normalizedDate, choiceId: choiceId, journalEntry: existingJournal)
         selections[key] = focus
+        saveSelections()
+        
+        // Update app icon if setting focus for today
+        if calendar.isDateInToday(normalizedDate) {
+            AppIconManager.shared.setIcon(for: choiceId)
+        }
+    }
+    
+    // Set the journal entry for a specific date
+    func setJournalEntry(for date: Date, entry: String) {
+        // Normalize date to start of day for consistent comparison
+        let calendar = Calendar.current
+        let normalizedDate = calendar.startOfDay(for: date)
+        let key = dateKey(for: normalizedDate)
+        
+        if var focus = selections[key] {
+            // Update existing focus with journal entry
+            focus.journalEntry = entry.isEmpty ? nil : entry
+            selections[key] = focus
+        } else {
+            // No focus set yet, create a placeholder (we'll use choiceId -1 to indicate no focus)
+            // Actually, let's not create an entry if there's no focus set
+            // We'll only store journal entries if there's a focus for that day
+            return
+        }
         saveSelections()
     }
     
+    // Get the journal entry for a specific date
+    func getJournalEntry(for date: Date) -> String? {
+        return getFocus(for: date)?.journalEntry
+    }
+
+    // Get all journal entries for a specific month
+    func getJournalEntries(for month: Date) -> [(date: Date, entry: String, focus: DailyFocus)] {
+        let calendar = Calendar.current
+        guard let monthInterval = calendar.dateInterval(of: .month, for: month) else {
+            return []
+        }
+
+        var entries: [(date: Date, entry: String, focus: DailyFocus)] = []
+
+        var currentDate = monthInterval.start
+        while currentDate < monthInterval.end {
+            if let focus = getFocus(for: currentDate),
+               let journalEntry = focus.journalEntry,
+               !journalEntry.trimmingCharacters(in: .whitespaces).isEmpty {
+                entries.append((date: currentDate, entry: journalEntry, focus: focus))
+            }
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+        }
+
+        // Sort by date (newest first)
+        return entries.sorted { $0.date > $1.date }
+    }
+
     // Get today's focus
     func getTodayFocus() -> DailyFocus? {
         return getFocus(for: Date())
@@ -74,5 +132,34 @@ class FocusStore: ObservableObject {
             selections = decoded
         }
     }
+    
+    // Migrate data from App Group to standard UserDefaults (one-time migration)
+    private func migrateIfNeeded() {
+        // Check if migration has already been performed
+        if userDefaults.bool(forKey: migrationKey) {
+            return
+        }
+        
+        // Try to load data from the old App Group location
+        if let appGroupDefaults = UserDefaults(suiteName: "group.punchline.Pillars"),
+           let oldData = appGroupDefaults.data(forKey: selectionsKey),
+           let oldSelections = try? JSONDecoder().decode([String: DailyFocus].self, from: oldData),
+           !oldSelections.isEmpty {
+            
+            // Check if we already have data in standard location
+            let hasExistingData = userDefaults.data(forKey: selectionsKey) != nil
+            
+            // Only migrate if we don't have existing data (preserve existing data if present)
+            if !hasExistingData {
+                // Migrate data to standard UserDefaults
+                if let encoded = try? JSONEncoder().encode(oldSelections) {
+                    userDefaults.set(encoded, forKey: selectionsKey)
+                    print("✅ Migrated \(oldSelections.count) focus selections from App Group to standard UserDefaults")
+                }
+            }
+        }
+        
+        // Mark migration as complete
+        userDefaults.set(true, forKey: migrationKey)
+    }
 }
-

@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		43B404F12EBB3E9C008C2294 /* Green.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404EC2EBB3E9C008C2294 /* Green.png */; };
+		43B404F22EBB3E9C008C2294 /* Blue.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404ED2EBB3E9C008C2294 /* Blue.png */; };
+		43B404F32EBB3E9C008C2294 /* Red.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404EE2EBB3E9C008C2294 /* Red.png */; };
+		43B404F42EBB3E9C008C2294 /* Orange.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404EF2EBB3E9C008C2294 /* Orange.png */; };
+		43B404F52EBB3E9C008C2294 /* Purple.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404F02EBB3E9C008C2294 /* Purple.png */; };
+		43B404F82EBB4000008C2294 /* AppIconManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B404F82EBB4001008C2294 /* AppIconManager.swift */; };
+		43B404F92EBB4100008C2294 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B404F92EBB4101008C2294 /* SettingsView.swift */; };
+		43B404FA2EBB4200008C2294 /* FocusLabelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B404FA2EBB4201008C2294 /* FocusLabelManager.swift */; };
+		43B404FB2EBB4300008C2294 /* JournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B404FB2EBB4301008C2294 /* JournalView.swift */; };
 		43CDCCC52EBAFAC800809D98 /* PillarsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCC42EBAFAC800809D98 /* PillarsApp.swift */; };
 		43CDCCC72EBAFAC800809D98 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCC62EBAFAC800809D98 /* ContentView.swift */; };
 		43CDCCC92EBAFAC900809D98 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 43CDCCC82EBAFAC900809D98 /* Assets.xcassets */; };
@@ -40,7 +49,32 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		43B4050F2EBB4A7E008C2294 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		43B404EC2EBB3E9C008C2294 /* Green.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Green.png; sourceTree = "<group>"; };
+		43B404ED2EBB3E9C008C2294 /* Blue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Blue.png; sourceTree = "<group>"; };
+		43B404EE2EBB3E9C008C2294 /* Red.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Red.png; sourceTree = "<group>"; };
+		43B404EF2EBB3E9C008C2294 /* Orange.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Orange.png; sourceTree = "<group>"; };
+		43B404F02EBB3E9C008C2294 /* Purple.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Purple.png; sourceTree = "<group>"; };
+		43B404F82EBB4001008C2294 /* AppIconManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconManager.swift; sourceTree = "<group>"; };
+		43B404F92EBB4101008C2294 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		43B404FA2EBB4201008C2294 /* FocusLabelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusLabelManager.swift; sourceTree = "<group>"; };
+		43B404FB2EBB4301008C2294 /* JournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalView.swift; sourceTree = "<group>"; };
+		43B404FE2EBB4A7D008C2294 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		43B405002EBB4A7D008C2294 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		43B405132EBB4F4F008C2294 /* Pillars.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Pillars.entitlements; sourceTree = "<group>"; };
 		43CDCCC12EBAFAC800809D98 /* Pillars.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pillars.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		43CDCCC42EBAFAC800809D98 /* PillarsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillarsApp.swift; sourceTree = "<group>"; };
 		43CDCCC62EBAFAC800809D98 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -85,12 +119,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		43B404FD2EBB4A7D008C2294 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				43B404FE2EBB4A7D008C2294 /* WidgetKit.framework */,
+				43B405002EBB4A7D008C2294 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		43CDCCB82EBAFAC800809D98 = {
 			isa = PBXGroup;
 			children = (
 				43CDCCC32EBAFAC800809D98 /* Pillars */,
 				43CDCCD42EBAFAC900809D98 /* PillarsTests */,
 				43CDCCDE2EBAFAC900809D98 /* PillarsUITests */,
+				43B404FD2EBB4A7D008C2294 /* Frameworks */,
 				43CDCCC22EBAFAC800809D98 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -108,8 +152,18 @@
 		43CDCCC32EBAFAC800809D98 /* Pillars */ = {
 			isa = PBXGroup;
 			children = (
+				43B405132EBB4F4F008C2294 /* Pillars.entitlements */,
+				43B404ED2EBB3E9C008C2294 /* Blue.png */,
+				43B404EC2EBB3E9C008C2294 /* Green.png */,
+				43B404EF2EBB3E9C008C2294 /* Orange.png */,
+				43B404F02EBB3E9C008C2294 /* Purple.png */,
+				43B404EE2EBB3E9C008C2294 /* Red.png */,
 				43CDCCC42EBAFAC800809D98 /* PillarsApp.swift */,
 				43CDCCC62EBAFAC800809D98 /* ContentView.swift */,
+				43B404F82EBB4001008C2294 /* AppIconManager.swift */,
+				43B404FA2EBB4201008C2294 /* FocusLabelManager.swift */,
+				43B404FB2EBB4301008C2294 /* JournalView.swift */,
+				43B404F92EBB4101008C2294 /* SettingsView.swift */,
 				43CDCCE32EBAFAC900809D9A /* FocusChoice.swift */,
 				43CDCCE32EBAFAC900809D9C /* FocusStore.swift */,
 				43CDCCE32EBAFAC900809D9E /* WeeklyView.swift */,
@@ -158,6 +212,7 @@
 				43CDCCBD2EBAFAC800809D98 /* Sources */,
 				43CDCCBE2EBAFAC800809D98 /* Frameworks */,
 				43CDCCBF2EBAFAC800809D98 /* Resources */,
+				43B4050F2EBB4A7E008C2294 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -252,8 +307,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				43B404F12EBB3E9C008C2294 /* Green.png in Resources */,
 				43CDCCCC2EBAFAC900809D98 /* Preview Assets.xcassets in Resources */,
+				43B404F52EBB3E9C008C2294 /* Purple.png in Resources */,
 				43CDCCC92EBAFAC900809D98 /* Assets.xcassets in Resources */,
+				43B404F32EBB3E9C008C2294 /* Red.png in Resources */,
+				43B404F22EBB3E9C008C2294 /* Blue.png in Resources */,
+				43B404F42EBB3E9C008C2294 /* Orange.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -280,6 +340,10 @@
 			files = (
 				43CDCCC72EBAFAC800809D98 /* ContentView.swift in Sources */,
 				43CDCCC52EBAFAC800809D98 /* PillarsApp.swift in Sources */,
+				43B404F82EBB4000008C2294 /* AppIconManager.swift in Sources */,
+				43B404FA2EBB4200008C2294 /* FocusLabelManager.swift in Sources */,
+				43B404FB2EBB4300008C2294 /* JournalView.swift in Sources */,
+				43B404F92EBB4100008C2294 /* SettingsView.swift in Sources */,
 				43CDCCE32EBAFAC900809D99 /* FocusChoice.swift in Sources */,
 				43CDCCE32EBAFAC900809D9B /* FocusStore.swift in Sources */,
 				43CDCCE32EBAFAC900809D9D /* WeeklyView.swift in Sources */,
@@ -447,12 +511,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pillars/Pillars.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Pillars/Preview Content\"";
 				DEVELOPMENT_TEAM = 284888JV3K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Pillars/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -476,12 +543,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Pillars/Pillars.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Pillars/Preview Content\"";
 				DEVELOPMENT_TEAM = 284888JV3K;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Pillars/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -107,7 +107,9 @@ struct CalendarView: View {
                     CalendarDayView(
                         day: day,
                         date: calendar.date(byAdding: .day, value: day - 1, to: firstDayOfMonth)!,
-                        focusStore: focusStore
+                        isSelected: false,
+                        focusStore: focusStore,
+                        onTap: nil
                     )
                 }
             }
