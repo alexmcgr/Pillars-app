@@ -30,6 +30,10 @@
 		43CDCCE32EBAFAC900809DA1 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DA2 /* CalendarView.swift */; };
 		43CDCCE32EBAFAC900809DA3 /* FocusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DA4 /* FocusView.swift */; };
 		43CDCCE32EBAFAC900809DA5 /* FullCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DA6 /* FullCalendarView.swift */; };
+		43CDCCE32EBAFAC900809DA7 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DA8 /* ThemeManager.swift */; };
+		43CDCCE32EBAFAC900809DA9 /* FocusMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DAA /* FocusMenuButton.swift */; };
+		43CDCCE32EBAFAC900809DAB /* DailyFocusSplash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DAC /* DailyFocusSplash.swift */; };
+		43CDCCE32EBAFAC900809DAD /* FocusGradientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DAE /* FocusGradientBackground.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +96,10 @@
 		43CDCCE32EBAFAC900809DA2 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
 		43CDCCE32EBAFAC900809DA4 /* FocusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusView.swift; sourceTree = "<group>"; };
 		43CDCCE32EBAFAC900809DA6 /* FullCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullCalendarView.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DA8 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DAA /* FocusMenuButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusMenuButton.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DAC /* DailyFocusSplash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyFocusSplash.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DAE /* FocusGradientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusGradientBackground.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -171,6 +179,10 @@
 				43CDCCE32EBAFAC900809DA2 /* CalendarView.swift */,
 				43CDCCE32EBAFAC900809DA4 /* FocusView.swift */,
 				43CDCCE32EBAFAC900809DA6 /* FullCalendarView.swift */,
+				43CDCCE32EBAFAC900809DA8 /* ThemeManager.swift */,
+				43CDCCE32EBAFAC900809DAA /* FocusMenuButton.swift */,
+				43CDCCE32EBAFAC900809DAC /* DailyFocusSplash.swift */,
+				43CDCCE32EBAFAC900809DAE /* FocusGradientBackground.swift */,
 				43CDCCC82EBAFAC900809D98 /* Assets.xcassets */,
 				43CDCCCA2EBAFAC900809D98 /* Preview Content */,
 			);
@@ -351,6 +363,10 @@
 				43CDCCE32EBAFAC900809DA1 /* CalendarView.swift in Sources */,
 				43CDCCE32EBAFAC900809DA3 /* FocusView.swift in Sources */,
 				43CDCCE32EBAFAC900809DA5 /* FullCalendarView.swift in Sources */,
+				43CDCCE32EBAFAC900809DA7 /* ThemeManager.swift in Sources */,
+				43CDCCE32EBAFAC900809DA9 /* FocusMenuButton.swift in Sources */,
+				43CDCCE32EBAFAC900809DAB /* DailyFocusSplash.swift in Sources */,
+				43CDCCE32EBAFAC900809DAD /* FocusGradientBackground.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

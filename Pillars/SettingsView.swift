@@ -10,39 +10,56 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("dynamicAppIcon") private var dynamicAppIcon = true
     @ObservedObject var focusStore: FocusStore
+    @StateObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var systemColorScheme
 
     // State for custom labels
     @State private var customLabels: [Int: String] = [:]
 
-    private let backgroundColor = Color(red: 38/255, green: 38/255, blue: 38/255)
+    private var activeColorScheme: ColorScheme {
+        themeManager.colorScheme ?? systemColorScheme
+    }
+
+    private var accentColor: Color {
+        focusStore.getTodayColor() ?? Color.blue
+    }
 
     var body: some View {
         NavigationView {
             ZStack {
-                backgroundColor
+                AppColors.background(for: activeColorScheme)
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     List {
                         Section {
+                            // Theme picker
+                            Picker("Theme", selection: $themeManager.appTheme) {
+                                ForEach(ThemeManager.AppTheme.allCases, id: \.self) { theme in
+                                    Text(theme.rawValue).tag(theme)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
+
                             Toggle(isOn: $dynamicAppIcon) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Dynamic App Icon")
                                         .font(.body)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(AppColors.primaryText(for: activeColorScheme))
                                     Text("Change app icon based on daily focus")
                                         .font(.caption)
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.secondary)
                                 }
                             }
-                            .tint(Color(red: 0/255, green: 122/255, blue: 255/255))
+                            .tint(accentColor)
                             .onChange(of: dynamicAppIcon) { _, newValue in
                                 updateAppIcon(enabled: newValue)
                             }
                         } header: {
                             Text("Appearance")
                         }
-                        .listRowBackground(Color(red: 58/255, green: 58/255, blue: 58/255))
+                        .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
 
                         Section {
                             ForEach(FocusChoice.defaultChoices) { choice in
@@ -68,7 +85,7 @@ struct SettingsView: View {
                                             }
                                         )
                                     )
-                                    .foregroundColor(.white)
+                                    .foregroundColor(AppColors.primaryText(for: activeColorScheme))
                                     .textFieldStyle(.plain)
                                 }
                                 .padding(.vertical, 4)
@@ -77,12 +94,12 @@ struct SettingsView: View {
                             Text("Category Names")
                         } footer: {
                             Text("Customize the names of your focus categories")
-                                .foregroundColor(.gray)
+                                .foregroundColor(AppColors.secondaryText(for: activeColorScheme))
                         }
-                        .listRowBackground(Color(red: 58/255, green: 58/255, blue: 58/255))
+                        .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
                     }
                     .scrollContentBackground(.hidden)
-                    .background(backgroundColor)
+                    .background(AppColors.background(for: activeColorScheme))
                 }
             }
             .navigationTitle("Settings")

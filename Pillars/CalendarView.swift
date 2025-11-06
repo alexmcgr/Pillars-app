@@ -10,21 +10,19 @@ import SwiftUI
 struct CalendarView: View {
     @ObservedObject var focusStore: FocusStore
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
     @State private var currentMonth: Date = Date()
-    
-    private let accentGray = Color(red: 48/255, green: 48/255, blue: 48/255)
-    private let backgroundColor = Color(red: 38/255, green: 38/255, blue: 38/255)
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // Month header with navigation
                 monthHeader
-                
+
                 // Calendar grid
                 calendarGrid
             }
-            .background(backgroundColor)
+            .background(AppColors.background(for: colorScheme))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -32,67 +30,67 @@ struct CalendarView: View {
                         dismiss()
                     }) {
                         Image(systemName: "xmark")
-                            .foregroundColor(.white)
+                            .foregroundColor(AppColors.primaryText(for: colorScheme))
                     }
                 }
             }
         }
     }
-    
+
     private var monthHeader: some View {
         HStack {
             Button(action: {
                 previousMonth()
             }) {
                 Image(systemName: "chevron.left")
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.primaryText(for: colorScheme))
                     .font(.system(size: 18, weight: .semibold))
             }
-            
+
             Spacer()
-            
+
             Text(monthYearString)
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.white)
-            
+                .foregroundColor(AppColors.primaryText(for: colorScheme))
+
             Spacer()
-            
+
             Button(action: {
                 nextMonth()
             }) {
                 Image(systemName: "chevron.right")
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.primaryText(for: colorScheme))
                     .font(.system(size: 18, weight: .semibold))
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(accentGray)
+        .background(AppColors.tertiaryBackground(for: colorScheme))
     }
-    
+
     private var calendarGrid: some View {
         let calendar = Calendar.current
         let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentMonth))!
         let firstWeekday = calendar.component(.weekday, from: firstDayOfMonth)
         let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)!.count
         let daysFromPreviousMonth = (firstWeekday - 1) % 7 // Adjust for Sunday start
-        
+
         // Weekday headers
         let weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-        
+
         return VStack(spacing: 0) {
             // Weekday headers
             HStack(spacing: 0) {
                 ForEach(weekDays, id: \.self) { day in
                     Text(day)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                 }
             }
-            .background(accentGray)
-            
+            .background(AppColors.tertiaryBackground(for: colorScheme))
+
             // Calendar days
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 0) {
                 // Days from previous month (empty)
@@ -100,7 +98,7 @@ struct CalendarView: View {
                     Color.clear
                         .frame(height: 50)
                 }
-                
+
                 // Days in current month
                 ForEach(1...daysInMonth, id: \.self) { day in
                     // Using CalendarDayView from FullCalendarView.swift
@@ -116,21 +114,21 @@ struct CalendarView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 8)
         }
-        .background(backgroundColor)
+        .background(AppColors.background(for: colorScheme))
     }
-    
+
     private var monthYearString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
         return formatter.string(from: currentMonth)
     }
-    
+
     private func previousMonth() {
         if let newMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) {
             currentMonth = newMonth
         }
     }
-    
+
     private func nextMonth() {
         if let newMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) {
             currentMonth = newMonth

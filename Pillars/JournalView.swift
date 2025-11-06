@@ -10,10 +10,9 @@ import SwiftUI
 struct JournalView: View {
     @ObservedObject var focusStore: FocusStore
     @State private var currentMonth: Date = Date()
-    @State private var selectedFilterCategoryId: Int? = nil
+    @State private var selectedFilterCategoryId: Int?
     @State private var showingFilterSheet = false
-
-    private let backgroundColor = Color(red: 38/255, green: 38/255, blue: 38/255)
+    @Environment(\.colorScheme) var colorScheme
 
     private var journalEntries: [(date: Date, entry: String, focus: DailyFocus)] {
         let entries = focusStore.getJournalEntries(for: currentMonth)
@@ -25,58 +24,40 @@ struct JournalView: View {
 
     private var monthString: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
+        formatter.dateFormat = "MMMM"
+        return formatter.string(from: currentMonth)
+    }
+
+    private var yearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy"
         return formatter.string(from: currentMonth)
     }
 
     var body: some View {
-        ZStack {
-            backgroundColor
-                .ignoresSafeArea()
+        NavigationView {
+            ZStack {
+                FocusGradientBackground(
+                    focusColor: focusStore.getTodayColor(),
+                    colorScheme: colorScheme
+                )
 
-            VStack(spacing: 0) {
-                // Month header with navigation
-                HStack {
-                    Button(action: previousMonth) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                    }
-
-                    Spacer()
-
-                    Text(monthString)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
-
-                    Spacer()
-
-                    Button(action: nextMonth) {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-
-                // Journal entries list
-                if journalEntries.isEmpty {
-                    VStack(spacing: 16) {
-                        Spacer()
-                        Text("No journal entries")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.6))
-                        Text("for \(monthString)")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.4))
-                        Spacer()
-                    }
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
+                List {
+                    Section {
+                        if journalEntries.isEmpty {
+                            VStack(spacing: 16) {
+                                Text("No journal entries")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                Text("for \(monthString)")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        } else {
                             ForEach(journalEntries, id: \.date) { entry in
                                 JournalEntryRow(
                                     date: entry.date,
@@ -84,35 +65,70 @@ struct JournalView: View {
                                     focus: entry.focus,
                                     focusStore: focusStore
                                 )
+                                .listRowBackground(Color.clear)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                                .listRowSeparator(.hidden)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 100) // Extra padding for filter button
                     }
                 }
-            }
-
-            // Floating filter button
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        showingFilterSheet = true
-                    }) {
-                        Image(systemName: selectedFilterCategoryId != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                            .font(.system(size: 24))
-                            .foregroundColor(.white)
-                            .frame(width: 56, height: 56)
-                            .background(
-                                Circle()
-                                    .fill(selectedFilterCategoryId != nil ? getFilterCategoryColor() : Color(red: 48/255, green: 48/255, blue: 48/255))
-                            )
-                            .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
+                .scrollContentBackground(.hidden)
+                .listStyle(.plain)
+                .navigationTitle("Journal")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        FocusMenuButton(focusStore: focusStore, selectedDate: Date())
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 20)
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        HStack(spacing: 16) {
+                            Button(action: previousMonth) {
+                                Image(systemName: "chevron.left")
+                                    .foregroundColor(AppColors.primaryText(for: colorScheme))
+                            }
+                            Button(action: nextMonth) {
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(AppColors.primaryText(for: colorScheme))
+                            }
+                        }
+                    }
+                }
+
+                // Floating filter button
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showingFilterSheet = true
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 4)
+
+                                if selectedFilterCategoryId != nil {
+                                    Circle()
+                                        .fill(getFilterCategoryColor().opacity(0.3))
+                                }
+
+                                Group {
+                                    if selectedFilterCategoryId != nil {
+                                        Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(getFilterCategoryColor())
+                                    } else {
+                                        Image(systemName: "line.3.horizontal.decrease.circle")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(AppColors.primaryText(for: colorScheme))
+                                    }
+                                }
+                            }
+                            .frame(width: 56, height: 56)
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
+                    }
                 }
             }
         }
@@ -121,8 +137,8 @@ struct JournalView: View {
                 selectedCategoryId: $selectedFilterCategoryId,
                 focusStore: focusStore
             )
-            .presentationDetents([.height(300)])
-            .presentationDragIndicator(.visible)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.automatic)
         }
     }
 
@@ -149,6 +165,7 @@ struct JournalView: View {
         }
         return choice.color.color
     }
+
 }
 
 struct JournalEntryRow: View {
@@ -156,13 +173,11 @@ struct JournalEntryRow: View {
     let entry: String
     let focus: DailyFocus
     @ObservedObject var focusStore: FocusStore
-
-    private let backgroundColor = Color(red: 38/255, green: 38/255, blue: 38/255)
-    private let accentGray = Color(red: 48/255, green: 48/255, blue: 48/255)
+    @Environment(\.colorScheme) var colorScheme
 
     private var dateString: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d, yyyy"
+        formatter.dateFormat = "EEEE, MMMM d"
         return formatter.string(from: date)
     }
 
@@ -181,35 +196,36 @@ struct JournalEntryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                HStack(spacing: 4) {
-                    Text(dateString)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+        VStack(alignment: .leading, spacing: 12) {
+            // Date and focus header
+            HStack(spacing: 8) {
+                Text(dateString)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText(for: colorScheme))
 
-                    if let focusName = focusName, let focusColor = focusColor {
-                        Text(" • ")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(focusColor)
+                if let focusName = focusName, let focusColor = focusColor {
+                    Circle()
+                        .fill(focusColor)
+                        .frame(width: 6, height: 6)
 
-                        Text(focusName)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
+                    Text(focusName)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
-
-                Spacer()
             }
 
+            // Journal entry text
             Text(entry)
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.9))
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(accentGray)
-                .cornerRadius(8)
+                .font(.system(size: 15))
+                .foregroundColor(AppColors.primaryText(for: colorScheme))
+                .lineLimit(nil)
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(AppColors.tertiaryBackground(for: colorScheme))
+        )
     }
 }
 
@@ -217,9 +233,7 @@ struct FilterSheet: View {
     @Binding var selectedCategoryId: Int?
     @ObservedObject var focusStore: FocusStore
     @Environment(\.dismiss) var dismiss
-
-    private let backgroundColor = Color(red: 38/255, green: 38/255, blue: 38/255)
-    private let accentGray = Color(red: 48/255, green: 48/255, blue: 48/255)
+    @Environment(\.colorScheme) var colorScheme
 
     private var accentColor: Color {
         focusStore.getTodayColor() ?? Color.blue
@@ -228,7 +242,7 @@ struct FilterSheet: View {
     var body: some View {
         NavigationView {
             ZStack {
-                backgroundColor
+                AppColors.background(for: colorScheme)
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -241,7 +255,7 @@ struct FilterSheet: View {
                             HStack {
                                 Text("All Categories")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(AppColors.primaryText(for: colorScheme))
                                 Spacer()
                                 if selectedCategoryId == nil {
                                     Image(systemName: "checkmark")
@@ -249,7 +263,7 @@ struct FilterSheet: View {
                                 }
                             }
                         }
-                        .listRowBackground(accentGray)
+                        .listRowBackground(AppColors.tertiaryBackground(for: colorScheme))
 
                         // Individual category options
                         ForEach(FocusChoice.defaultChoices) { choice in
@@ -264,7 +278,7 @@ struct FilterSheet: View {
 
                                     Text(choice.label)
                                         .font(.system(size: 16))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(AppColors.primaryText(for: colorScheme))
 
                                     Spacer()
 
@@ -274,11 +288,11 @@ struct FilterSheet: View {
                                     }
                                 }
                             }
-                            .listRowBackground(accentGray)
+                            .listRowBackground(AppColors.tertiaryBackground(for: colorScheme))
                         }
                     }
                     .scrollContentBackground(.hidden)
-                    .background(backgroundColor)
+                    .background(AppColors.background(for: colorScheme))
                 }
             }
             .navigationTitle("Filter by Category")
