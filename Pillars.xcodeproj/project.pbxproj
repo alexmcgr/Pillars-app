@@ -34,6 +34,11 @@
 		43CDCCE32EBAFAC900809DA9 /* FocusMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DAA /* FocusMenuButton.swift */; };
 		43CDCCE32EBAFAC900809DAB /* DailyFocusSplash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DAC /* DailyFocusSplash.swift */; };
 		43CDCCE32EBAFAC900809DAD /* FocusGradientBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DAE /* FocusGradientBackground.swift */; };
+		43CDCCE32EBAFAC900809DAF /* WeatherService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DB0 /* WeatherService.swift */; };
+		43CDCCE32EBAFAC900809DB1 /* StreakModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DB2 /* StreakModels.swift */; };
+		43CDCCE32EBAFAC900809DB3 /* StreaksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DB4 /* StreaksView.swift */; };
+		43CDCCE32EBAFAC900809DB5 /* SFSymbolPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DB6 /* SFSymbolPicker.swift */; };
+		43CDCCE32EBAFAC900809DB7 /* CardOrderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CDCCE32EBAFAC900809DB8 /* CardOrderManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +105,11 @@
 		43CDCCE32EBAFAC900809DAA /* FocusMenuButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusMenuButton.swift; sourceTree = "<group>"; };
 		43CDCCE32EBAFAC900809DAC /* DailyFocusSplash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyFocusSplash.swift; sourceTree = "<group>"; };
 		43CDCCE32EBAFAC900809DAE /* FocusGradientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusGradientBackground.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DB0 /* WeatherService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherService.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DB2 /* StreakModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakModels.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DB4 /* StreaksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreaksView.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DB6 /* SFSymbolPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SFSymbolPicker.swift; sourceTree = "<group>"; };
+		43CDCCE32EBAFAC900809DB8 /* CardOrderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardOrderManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,6 +193,11 @@
 				43CDCCE32EBAFAC900809DAA /* FocusMenuButton.swift */,
 				43CDCCE32EBAFAC900809DAC /* DailyFocusSplash.swift */,
 				43CDCCE32EBAFAC900809DAE /* FocusGradientBackground.swift */,
+				43CDCCE32EBAFAC900809DB0 /* WeatherService.swift */,
+				43CDCCE32EBAFAC900809DB2 /* StreakModels.swift */,
+				43CDCCE32EBAFAC900809DB4 /* StreaksView.swift */,
+				43CDCCE32EBAFAC900809DB6 /* SFSymbolPicker.swift */,
+				43CDCCE32EBAFAC900809DB8 /* CardOrderManager.swift */,
 				43CDCCC82EBAFAC900809D98 /* Assets.xcassets */,
 				43CDCCCA2EBAFAC900809D98 /* Preview Content */,
 			);
@@ -367,6 +382,11 @@
 				43CDCCE32EBAFAC900809DA9 /* FocusMenuButton.swift in Sources */,
 				43CDCCE32EBAFAC900809DAB /* DailyFocusSplash.swift in Sources */,
 				43CDCCE32EBAFAC900809DAD /* FocusGradientBackground.swift in Sources */,
+				43CDCCE32EBAFAC900809DAF /* WeatherService.swift in Sources */,
+				43CDCCE32EBAFAC900809DB1 /* StreakModels.swift in Sources */,
+				43CDCCE32EBAFAC900809DB3 /* StreaksView.swift in Sources */,
+				43CDCCE32EBAFAC900809DB5 /* SFSymbolPicker.swift in Sources */,
+				43CDCCE32EBAFAC900809DB7 /* CardOrderManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

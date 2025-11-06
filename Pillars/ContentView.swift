@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var focusStore = FocusStore()
+    @StateObject private var streakManager = StreakManager()
     @StateObject private var themeManager = ThemeManager.shared
     @State private var selectedTab = 0
     @State private var showDailyFocusSplash = false
@@ -48,7 +49,7 @@ struct ContentView: View {
         ZStack {
             TabView(selection: $selectedTab) {
             // Focus Tab
-            FocusView(focusStore: focusStore)
+            FocusView(focusStore: focusStore, streakManager: streakManager)
                 .tabItem {
                     Image(systemName: "circle.fill")
                     Text("Focus")
@@ -85,6 +86,10 @@ struct ContentView: View {
             .onAppear {
                 updateTabBarAppearance()
                 checkAndShowDailySplash()
+                // Pre-fetch weather data on app load
+                Task {
+                    _ = try? await WeatherService.shared.fetchWeather()
+                }
             }
             .onChange(of: accentColor) { _, _ in
                 // Note: Tab bar appearance updates on app restart
@@ -113,36 +118,17 @@ struct ContentView: View {
     }
 
     private func checkAndShowDailySplash() {
-        // TESTING MODE: Show splash on every app launch
-        // TODO: Revert to once-per-day logic after testing
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            showDailyFocusSplash = true
-        }
-
-        /* PRODUCTION CODE - Uncomment after testing:
-        let lastSplashDateKey = "lastDailySplashDate"
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-
-        let today = dateFormatter.string(from: Date())
-        let lastSplashDate = UserDefaults.standard.string(forKey: lastSplashDateKey)
-
-        // Show splash if we haven't shown it today
-        if lastSplashDate != today {
-            // Check if focus is already set for today
-            let todayFocus = focusStore.getFocus(for: Date())
-            if todayFocus == nil {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    showDailyFocusSplash = true
-                }
-            } else {
-                // If focus is already set, update tab bar with that color immediately
-                updateTabBarAppearance()
+        // Check if focus is already set for today
+        let todayFocus = focusStore.getFocus(for: Date())
+        if todayFocus == nil {
+            // Show splash if no focus is set for today
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showDailyFocusSplash = true
             }
-            // Mark that we've shown the splash today
-            UserDefaults.standard.set(today, forKey: lastSplashDateKey)
+        } else {
+            // If focus is already set, update tab bar with that color immediately
+            updateTabBarAppearance()
         }
-        */
     }
 
     private func updateTabBarAppearance() {

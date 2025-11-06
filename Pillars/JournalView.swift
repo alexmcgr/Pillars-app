@@ -9,29 +9,41 @@ import SwiftUI
 
 struct JournalView: View {
     @ObservedObject var focusStore: FocusStore
-    @State private var currentMonth: Date = Date()
     @State private var selectedFilterCategoryId: Int?
     @State private var showingFilterSheet = false
     @Environment(\.colorScheme) var colorScheme
 
-    private var journalEntries: [(date: Date, entry: String, focus: DailyFocus)] {
-        let entries = focusStore.getJournalEntries(for: currentMonth)
+    // Get all journal entries grouped by month
+    private var entriesByMonth: [(month: String, entries: [(date: Date, entry: String, focus: DailyFocus)])] {
+        let allEntries = focusStore.getAllJournalEntries()
+        
+        // Filter by category if selected
+        let filteredEntries: [(date: Date, entry: String, focus: DailyFocus)]
         if let categoryId = selectedFilterCategoryId {
-            return entries.filter { $0.focus.choiceId == categoryId }
+            filteredEntries = allEntries.filter { $0.focus.choiceId == categoryId }
+        } else {
+            filteredEntries = allEntries
         }
-        return entries
-    }
-
-    private var monthString: String {
+        
+        // Group by month
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: filteredEntries) { entry in
+            let components = calendar.dateComponents([.year, .month], from: entry.date)
+            return calendar.date(from: components) ?? entry.date
+        }
+        
+        // Sort months descending (newest first)
+        let sortedMonths = grouped.keys.sorted(by: >)
+        
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM"
-        return formatter.string(from: currentMonth)
-    }
-
-    private var yearString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy"
-        return formatter.string(from: currentMonth)
+        
+        return sortedMonths.compactMap { monthDate in
+            guard let entries = grouped[monthDate] else { return nil }
+            // Sort entries within month (newest first)
+            let sortedEntries = entries.sorted { $0.date > $1.date }
+            return (formatter.string(from: monthDate), sortedEntries)
+        }
     }
 
     var body: some View {
@@ -42,54 +54,62 @@ struct JournalView: View {
                     colorScheme: colorScheme
                 )
 
-                List {
-                    Section {
-                        if journalEntries.isEmpty {
-                            VStack(spacing: 16) {
-                                Text("No journal entries")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                Text("for \(monthString)")
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(.tertiary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        } else {
-                            ForEach(journalEntries, id: \.date) { entry in
-                                JournalEntryRow(
-                                    date: entry.date,
-                                    entry: entry.entry,
-                                    focus: entry.focus,
-                                    focusStore: focusStore
-                                )
+                Group {
+                    if entriesByMonth.isEmpty {
+                        VStack(spacing: 16) {
+                            Text("No journal entries")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.secondary)
+                            Text("Start writing to see your entries here")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        List {
+                            ForEach(entriesByMonth, id: \.month) { monthData in
+                                // Month header as a list row
+                                HStack {
+                                    Text(monthData.month)
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundColor(AppColors.primaryText(for: colorScheme))
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
                                 .listRowBackground(Color.clear)
-                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
                                 .listRowSeparator(.hidden)
+                                
+                                // Journal entries for this month
+                                ForEach(monthData.entries, id: \.date) { entry in
+                                    JournalEntryRow(
+                                        date: entry.date,
+                                        entry: entry.entry,
+                                        focus: entry.focus,
+                                        focusStore: focusStore
+                                    )
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                                }
                             }
                         }
+                        .scrollContentBackground(.hidden)
+                        .listStyle(.plain)
                     }
                 }
-                .scrollContentBackground(.hidden)
-                .listStyle(.plain)
                 .navigationTitle("Journal")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        FocusMenuButton(focusStore: focusStore, selectedDate: Date())
-                    }
-                    ToolbarItem(placement: .navigationBarLeading) {
                         HStack(spacing: 16) {
-                            Button(action: previousMonth) {
-                                Image(systemName: "chevron.left")
-                                    .foregroundColor(AppColors.primaryText(for: colorScheme))
-                            }
-                            Button(action: nextMonth) {
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(AppColors.primaryText(for: colorScheme))
-                            }
+                            FocusMenuButton(
+                                focusStore: focusStore,
+                                selectedDate: Date(),
+                                currentSelectedDate: .constant(Date())
+                            )
                         }
                     }
                 }
@@ -142,22 +162,6 @@ struct JournalView: View {
         }
     }
 
-    private func previousMonth() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            if let newMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) {
-                currentMonth = newMonth
-            }
-        }
-    }
-
-    private func nextMonth() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            if let newMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) {
-                currentMonth = newMonth
-            }
-        }
-    }
-
     private func getFilterCategoryColor() -> Color {
         guard let categoryId = selectedFilterCategoryId,
               let choice = FocusChoice.defaultChoices.first(where: { $0.id == categoryId }) else {
@@ -177,7 +181,7 @@ struct JournalEntryRow: View {
 
     private var dateString: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d"
+        formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
     }
 
@@ -312,4 +316,3 @@ struct FilterSheet: View {
 #Preview {
     JournalView(focusStore: FocusStore())
 }
-

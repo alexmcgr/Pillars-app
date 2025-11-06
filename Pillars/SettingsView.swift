@@ -11,10 +11,12 @@ struct SettingsView: View {
     @AppStorage("dynamicAppIcon") private var dynamicAppIcon = true
     @ObservedObject var focusStore: FocusStore
     @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var cardOrderManager = CardOrderManager.shared
     @Environment(\.colorScheme) var systemColorScheme
 
     // State for custom labels
     @State private var customLabels: [Int: String] = [:]
+    @State private var showingCardOrderSheet = false
 
     private var activeColorScheme: ColorScheme {
         themeManager.colorScheme ?? systemColorScheme
@@ -58,6 +60,22 @@ struct SettingsView: View {
                             }
                         } header: {
                             Text("Appearance")
+                        }
+                        .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
+
+                        Section {
+                            NavigationLink(destination: CardOrderView(cardOrderManager: cardOrderManager)) {
+                                HStack {
+                                    Image(systemName: "square.grid.3x2")
+                                        .foregroundColor(accentColor)
+                                        .font(.system(size: 20))
+                                        .frame(width: 28)
+                                    Text("Reorder Home Screen")
+                                        .foregroundColor(AppColors.primaryText(for: activeColorScheme))
+                                }
+                            }
+                        } header: {
+                            Text("Customization")
                         }
                         .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
 
@@ -129,6 +147,87 @@ struct SettingsView: View {
             // Disable dynamic icons - use default/black icon
             AppIconManager.shared.setIconToDefault()
         }
+    }
+}
+
+// MARK: - Card Order Row
+struct CardOrderRow: View {
+    let card: HomeScreenCard
+    let accentColor: Color
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: card.iconName)
+                .font(.system(size: 20))
+                .foregroundColor(accentColor)
+                .frame(width: 28)
+
+            Text(card.rawValue)
+                .foregroundColor(AppColors.primaryText(for: colorScheme))
+
+            Spacer()
+
+            Image(systemName: "line.3.horizontal")
+                .foregroundColor(.secondary)
+                .font(.system(size: 16))
+        }
+        .listRowBackground(AppColors.tertiaryBackground(for: colorScheme))
+    }
+}
+
+// MARK: - Card Order View
+struct CardOrderView: View {
+    @ObservedObject var cardOrderManager: CardOrderManager
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+
+    private var accentColor: Color {
+        FocusStore().getTodayColor() ?? .blue
+    }
+
+    var body: some View {
+        ZStack {
+            AppColors.background(for: colorScheme)
+                .ignoresSafeArea()
+
+            List {
+                Section {
+                    ForEach(cardOrderManager.cardOrder, id: \.id) { card in
+                        CardOrderRow(
+                            card: card,
+                            accentColor: accentColor,
+                            colorScheme: colorScheme
+                        )
+                    }
+                    .onMove { source, destination in
+                        cardOrderManager.moveCard(from: source, to: destination)
+                    }
+                } header: {
+                    Text("Drag to reorder")
+                } footer: {
+                    Text("The order below will be reflected on your home screen")
+                        .foregroundColor(AppColors.secondaryText(for: colorScheme))
+                }
+
+                Section {
+                    Button(action: {
+                        cardOrderManager.resetToDefault()
+                    }) {
+                        HStack {
+                            Spacer()
+                            Text("Reset to Default Order")
+                                .foregroundColor(accentColor)
+                            Spacer()
+                        }
+                    }
+                    .listRowBackground(AppColors.tertiaryBackground(for: colorScheme))
+                }
+            }
+            .scrollContentBackground(.hidden)
+        }
+        .navigationTitle("Reorder Home Screen")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

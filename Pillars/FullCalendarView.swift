@@ -18,6 +18,7 @@ struct FullCalendarView: View {
     @ObservedObject var focusStore: FocusStore
     @State private var currentMonth: Date = Date()
     @State private var selectedDate: Date? = Date()
+    @State private var menuSelectedDate: Date = Date()
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -65,19 +66,11 @@ struct FullCalendarView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    FocusMenuButton(focusStore: focusStore, selectedDate: Date())
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    HStack(spacing: 16) {
-                        Button(action: previousMonth) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(AppColors.primaryText(for: colorScheme))
-                        }
-                        Button(action: nextMonth) {
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(AppColors.primaryText(for: colorScheme))
-                        }
-                    }
+                    FocusMenuButton(
+                        focusStore: focusStore,
+                        selectedDate: selectedDate ?? Date(),
+                        currentSelectedDate: $menuSelectedDate
+                    )
                 }
             }
         }

@@ -21,9 +21,9 @@ struct FocusGradientBackground: View {
             if let color = focusColor {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        color.opacity(colorScheme == .dark ? 0.35 : 0.50),
+                        color.opacity(colorScheme == .dark ? 0.55 : 0.70),
+                        color.opacity(colorScheme == .dark ? 0.40 : 0.55),
                         color.opacity(colorScheme == .dark ? 0.25 : 0.35),
-                        color.opacity(colorScheme == .dark ? 0.15 : 0.20),
                         AppColors.background(for: colorScheme).opacity(0)
                     ]),
                     startPoint: .top,
@@ -36,4 +36,3 @@ struct FocusGradientBackground: View {
         }
     }
 }
-

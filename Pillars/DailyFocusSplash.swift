@@ -100,6 +100,10 @@ struct DailyFocusSplash: View {
         .opacity(fadeOutOpacity)
         .onAppear {
             startAnimation()
+            // Pre-fetch weather data during splash screen
+            Task {
+                _ = try? await WeatherService.shared.fetchWeather()
+            }
         }
     }
 

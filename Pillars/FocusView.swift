@@ -9,11 +9,19 @@ import SwiftUI
 
 struct FocusView: View {
     @ObservedObject var focusStore: FocusStore
+    @ObservedObject var streakManager: StreakManager
+    @StateObject private var cardOrderManager = CardOrderManager.shared
     @State private var selectedDate: Date = Date()
     @State private var showingJournalSheet = false
     @State private var journalText: String = ""
     @State private var showTestSplash = false
+    @State private var weatherData: WeatherData?
+    @State private var isLoadingWeather = false
     @Environment(\.colorScheme) var colorScheme
+
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(selectedDate)
+    }
 
     private var selectedFocusId: Int? {
         focusStore.getFocus(for: selectedDate)?.choiceId
@@ -33,13 +41,20 @@ struct FocusView: View {
                 )
 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 16) {
                         // Header section with focus info
                         headerSection
                             .padding(.horizontal, 20)
                             .padding(.top, 16)
 
-                        Spacer(minLength: 100)
+                        // Dynamic card ordering
+                        ForEach(cardOrderManager.cardOrder) { card in
+                            cardView(for: card)
+                                .padding(.horizontal, 16)
+                        }
+
+                        // Spacer for future features
+                        Spacer(minLength: 200)
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -68,37 +83,6 @@ struct FocusView: View {
                         }
                 )
 
-                // Floating buttons in bottom right
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-
-                        VStack(spacing: 16) {
-                            // Test button for splash screen
-                            Button(action: {
-                                showTestSplash = true
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 4)
-
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(AppColors.primaryText(for: colorScheme))
-                                }
-                                .frame(width: 44, height: 44)
-                            }
-
-                            // Journal button
-                            floatingJournalButton
-                        }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
-                    }
-                }
-
                 // Test splash screen overlay
                 if showTestSplash {
                     DailyFocusSplash(focusStore: focusStore, isPresented: $showTestSplash)
@@ -110,100 +94,139 @@ struct FocusView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    FocusMenuButton(focusStore: focusStore, selectedDate: selectedDate)
+                    FocusMenuButton(focusStore: focusStore, selectedDate: selectedDate, currentSelectedDate: $selectedDate)
                 }
             }
         }
         .sheet(isPresented: $showingJournalSheet) {
-            journalEntrySheet
-                .presentationDetents([.height(80), .large])
-                .presentationDragIndicator(.hidden)
-                .presentationBackgroundInteraction(.disabled)
-                .presentationBackground(.regularMaterial)
-                .ignoresSafeArea(.keyboard, edges: .bottom)
+            JournalEntrySheet(
+                text: $journalText,
+                accentColor: getJournalEntryColor(for: selectedDate),
+                onSave: {
+                    focusStore.setJournalEntry(for: selectedDate, entry: journalText)
+                    showingJournalSheet = false
+                },
+                onCancel: {
+                    journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
+                    showingJournalSheet = false
+                }
+            )
         }
         .onAppear {
             // Load existing journal entry if there is one
             journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
+            // Load weather if it's today
+            if isToday {
+                loadWeather()
+            }
         }
         .onChange(of: selectedDate) { _ in
             // Update journal text when date changes
             journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
+            // Load weather if it's today, clear if not
+            if isToday {
+                loadWeather()
+            } else {
+                weatherData = nil
+            }
+        }
+    }
+    
+    private func loadWeather() {
+        guard isToday else { return }
+        Task {
+            isLoadingWeather = true
+            do {
+                let weather = try await WeatherService.shared.fetchWeather()
+                await MainActor.run {
+                    weatherData = weather
+                    isLoadingWeather = false
+                }
+            } catch {
+                print("Weather error: \(error)")
+                await MainActor.run {
+                    isLoadingWeather = false
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func cardView(for card: HomeScreenCard) -> some View {
+        switch card {
+        case .todo:
+            TodoListCard(focusStore: focusStore, selectedDate: selectedDate)
+        case .journal:
+            JournalEntryCard(
+                selectedDate: selectedDate,
+                focusStore: focusStore,
+                onTap: {
+                    journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
+                    showingJournalSheet = true
+                }
+            )
+        case .streaks:
+            StreaksCard(
+                streakManager: streakManager,
+                focusStore: focusStore,
+                selectedDate: selectedDate
+            )
+        case .dateNavigation:
+            DateNavigationCard(selectedDate: $selectedDate, focusStore: focusStore)
         }
     }
 
     private var headerSection: some View {
-        HStack(spacing: 8) {
-            if let choice = selectedFocusChoice {
-                // Color dot next to focus name
-                Circle()
-                    .fill(choice.color.color)
-                    .frame(width: 8, height: 8)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                if let choice = selectedFocusChoice {
+                    // Color dot next to focus name
+                    Circle()
+                        .fill(choice.color.color)
+                        .frame(width: 8, height: 8)
 
-                Text(choice.label)
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundColor(.secondary)
+                    Text(choice.label)
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.secondary)
 
-                if let relativeDayText = relativeDayText {
-                    Text("•")
+                    if let relativeDayText = relativeDayText {
+                        Text("•")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundStyle(.tertiary)
+                        Text(relativeDayText)
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundStyle(.tertiary)
+                    }
+                } else {
+                    Text("No focus set")
                         .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(.tertiary)
-                    Text(relativeDayText)
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(.tertiary)
+                        .foregroundColor(.secondary)
+
+                    if let relativeDayText = relativeDayText {
+                        Text("•")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundStyle(.tertiary)
+                        Text(relativeDayText)
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundStyle(.tertiary)
+                    }
                 }
-            } else {
-                Text("No focus set")
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundColor(.secondary)
-
-                if let relativeDayText = relativeDayText {
-                    Text("•")
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(.tertiary)
-                    Text(relativeDayText)
-                        .font(.system(size: 17, weight: .regular))
+            }
+            
+            // Weather info (only show when it's today)
+            if isToday, let weather = weatherData {
+                CompactWeatherView(weather: weather)
+            } else if isToday, isLoadingWeather {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                    Text("Loading weather...")
+                        .font(.system(size: 14))
                         .foregroundStyle(.tertiary)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var floatingJournalButton: some View {
-        Button(action: {
-            showingJournalSheet = true
-        }) {
-            ZStack {
-                // Liquid glass background
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: Color.black.opacity(0.3), radius: 12, x: 0, y: 4)
-
-                // Icon
-                let hasEntry = focusStore.getJournalEntry(for: selectedDate) != nil
-                Image(systemName: hasEntry ? "note.text" : "plus")
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(AppColors.primaryText(for: colorScheme))
-            }
-            .frame(width: 56, height: 56)
-        }
-    }
-
-    private var journalEntrySheet: some View {
-        MessageStyleJournalView(
-            text: $journalText,
-            selectedDate: selectedDate,
-            accentColor: getJournalEntryColor(for: selectedDate),
-            onSave: {
-                focusStore.setJournalEntry(for: selectedDate, entry: journalText)
-                showingJournalSheet = false
-            },
-            onCancel: {
-                journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
-                showingJournalSheet = false
-            }
-        )
     }
 
     private func getJournalEntryColor(for date: Date) -> Color {
@@ -253,282 +276,513 @@ struct FocusView: View {
         }
         return nil
     }
-
-    private func isToday(_ date: Date) -> Bool {
-        Calendar.current.isDateInToday(date)
-    }
-
-    private func dateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE"
-        return formatter.string(from: date)
-    }
-
-    private func fullDateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d, yyyy"
-        return formatter.string(from: date)
-    }
 }
 
-// Message-style journal view (like iMessage)
-struct MessageStyleJournalView: View {
-    @Binding var text: String
+// MARK: - Todo List Card
+struct TodoListCard: View {
+    @ObservedObject var focusStore: FocusStore
     let selectedDate: Date
-    let accentColor: Color
-    let onSave: () -> Void
-    let onCancel: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingAddTodo = false
+    @State private var newTodoText = ""
 
-    @State private var keyboardHeight: CGFloat = 0
+    private var todos: [TodoItem] {
+        focusStore.getTodos(for: selectedDate)
+    }
+
+    private var focusColor: Color {
+        guard let focus = focusStore.getFocus(for: selectedDate),
+              let choice = FocusChoice.defaultChoices.first(where: { $0.id == focus.choiceId }) else {
+            return .blue
+        }
+        return choice.color.color
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            MessageInputViewRepresentable(
-                text: $text,
-                accentColor: accentColor,
-                onSave: onSave
-            )
-            .background(Color(UIColor.systemBackground))
-            .padding(.bottom, keyboardHeight)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .background(Color.clear)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    keyboardHeight = keyboardFrame.height
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "checklist")
+                    .font(.system(size: 24))
+                    .foregroundColor(focusColor)
+
+                Text("To-Do")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText(for: colorScheme))
+
+                Spacer()
+
+                Button(action: {
+                    showingAddTodo = true
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(AppColors.primaryText(for: colorScheme))
+                }
+            }
+
+            if todos.isEmpty {
+                Text("No tasks for today")
+                    .font(.system(size: 15))
+                    .foregroundStyle(.tertiary)
+                    .padding(.vertical, 8)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(todos) { todo in
+                        TodoRow(
+                            todo: todo,
+                            focusStore: focusStore,
+                            selectedDate: selectedDate
+                        ) {
+                            focusStore.toggleTodo(for: selectedDate, todoId: todo.id)
+                        }
+                    }
                 }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(.easeOut(duration: 0.25)) {
-                keyboardHeight = 0
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(AppColors.tertiaryBackground(for: colorScheme))
+        )
+        .sheet(isPresented: $showingAddTodo) {
+            AddTodoSheet(newTodoText: $newTodoText) {
+                if !newTodoText.isEmpty {
+                    focusStore.addTodo(for: selectedDate, text: newTodoText)
+                    newTodoText = ""
+                    showingAddTodo = false
+                }
+            }
+            .presentationDetents([.height(200)])
+        }
+    }
+}
+
+struct TodoRow: View {
+    let todo: TodoItem
+    @ObservedObject var focusStore: FocusStore
+    let selectedDate: Date
+    let onToggle: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var focusColor: Color {
+        guard let focus = focusStore.getFocus(for: selectedDate),
+              let choice = FocusChoice.defaultChoices.first(where: { $0.id == focus.choiceId }) else {
+            return .blue // Default to blue if no focus set
+        }
+        return choice.color.color
+    }
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 12) {
+                Image(systemName: todo.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(todo.isCompleted ? focusColor : .secondary)
+
+                Text(todo.text)
+                    .font(.system(size: 15))
+                    .foregroundColor(todo.isCompleted ? .secondary : AppColors.primaryText(for: colorScheme))
+                    .strikethrough(todo.isCompleted)
+
+                Spacer()
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct AddTodoSheet: View {
+    @Binding var newTodoText: String
+    let onAdd: () -> Void
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 16) {
+                TextField("New task", text: $newTodoText)
+                    .textFieldStyle(.roundedBorder)
+                    .padding()
+
+                Spacer()
+            }
+            .navigationTitle("Add Task")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Add") {
+                        onAdd()
+                    }
+                    .disabled(newTodoText.isEmpty)
+                }
             }
         }
     }
 }
 
-// UIKit-based message input view that sits on keyboard
-struct MessageInputViewRepresentable: UIViewRepresentable {
+// MARK: - Journal Entry Card
+struct JournalEntryCard: View {
+    let selectedDate: Date
+    @ObservedObject var focusStore: FocusStore
+    let onTap: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var hasEntry: Bool {
+        focusStore.getJournalEntry(for: selectedDate) != nil
+    }
+
+    private var entryPreview: String? {
+        if let entry = focusStore.getJournalEntry(for: selectedDate), !entry.isEmpty {
+            return String(entry.prefix(100))
+        }
+        return nil
+    }
+
+    private var focusColor: Color {
+        guard let focus = focusStore.getFocus(for: selectedDate),
+              let choice = FocusChoice.defaultChoices.first(where: { $0.id == focus.choiceId }) else {
+            return .blue
+        }
+        return choice.color.color
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: hasEntry ? "note.text" : "square.and.pencil")
+                        .font(.system(size: 24))
+                        .foregroundColor(focusColor)
+
+                    Text("Journal Entry")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(AppColors.primaryText(for: colorScheme))
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+
+                if let preview = entryPreview {
+                    Text(preview)
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                } else {
+                    Text("Add a journal entry for today")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(AppColors.tertiaryBackground(for: colorScheme))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Journal Entry Sheet
+struct JournalEntrySheet: View {
     @Binding var text: String
     let accentColor: Color
     let onSave: () -> Void
+    let onCancel: () -> Void
+    @Environment(\.dismiss) var dismiss
+    @FocusState private var isTextFieldFocused: Bool
 
-    func makeUIView(context: Context) -> MessageInputContainerView {
-        let view = MessageInputContainerView()
-        view.accentColor = accentColor
-        view.onSave = onSave
-        view.textView.delegate = context.coordinator
-        // Set text first, then update placeholder
-        view.textView.text = text
-        view.updatePlaceholder()
-        view.updateSendButton()
-        return view
-    }
-
-    func updateUIView(_ uiView: MessageInputContainerView, context: Context) {
-        uiView.accentColor = accentColor
-        uiView.onSave = onSave
-        if uiView.textView.text != text {
-            uiView.textView.text = text
-            // Trigger height update and placeholder update when text changes from outside
-            uiView.textDidChange()
-            uiView.updatePlaceholder()
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                TextEditor(text: $text)
+                    .font(.system(size: 17))
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .focused($isTextFieldFocused)
+            }
+            .navigationTitle("Journal Entry")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        onCancel()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        onSave()
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundColor(accentColor)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
         }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UITextViewDelegate {
-        var parent: MessageInputViewRepresentable
-
-        init(_ parent: MessageInputViewRepresentable) {
-            self.parent = parent
-        }
-
-        func textViewDidChange(_ textView: UITextView) {
-            parent.text = textView.text
-            // Update send button state
-            if let containerView = textView.superview?.superview as? MessageInputContainerView {
-                containerView.updateSendButton()
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now()) {
+                isTextFieldFocused = true
             }
         }
     }
 }
 
-// UIKit container view that mimics iMessage input
-class MessageInputContainerView: UIView {
-    let textView: UITextView = {
-        let textView = UITextView()
-        textView.font = UIFont.systemFont(ofSize: 17)
-        textView.isScrollEnabled = false
-        textView.translatesAutoresizingMaskIntoConstraints = false
-        textView.layer.cornerRadius = 18
-        textView.backgroundColor = UIColor.systemGray5
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
-        textView.textContainer.lineFragmentPadding = 0
-        textView.textContainer.widthTracksTextView = true
-        textView.textContainer.lineBreakMode = .byWordWrapping
-        textView.textContainer.maximumNumberOfLines = 0
-        return textView
-    }()
+// MARK: - Date Navigation Card
+struct DateNavigationCard: View {
+    @Binding var selectedDate: Date
+    @ObservedObject var focusStore: FocusStore
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingDatePicker = false
 
-    let sendButton: UIButton = {
-        let button = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: 32, weight: .medium)
-        button.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: config), for: .normal)
-        button.imageView?.contentMode = .scaleAspectFit
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.tintColor = UIColor.systemGray3
-        button.isEnabled = false
-        return button
-    }()
+    private var focusColor: Color {
+        guard let focus = focusStore.getFocus(for: selectedDate),
+              let choice = FocusChoice.defaultChoices.first(where: { $0.id == focus.choiceId }) else {
+            return .blue
+        }
+        return choice.color.color
+    }
 
-    var textViewHeightConstraint: NSLayoutConstraint!
-    var containerHeightConstraint: NSLayoutConstraint!
-    var placeholderLabel: UILabel!
-    var accentColor: Color = .blue {
-        didSet {
-            updateSendButton()
+    private var dateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        let monthName = formatter.string(from: selectedDate)
+        let day = Calendar.current.component(.day, from: selectedDate)
+        let suffix = ordinalSuffix(for: day)
+        return "\(monthName) \(day)\(suffix)"
+    }
+
+    private var relativeDayText: String? {
+        if Calendar.current.isDateInToday(selectedDate) {
+            return "Today"
+        } else if Calendar.current.isDateInYesterday(selectedDate) {
+            return "Yesterday"
+        } else if Calendar.current.isDateInTomorrow(selectedDate) {
+            return "Tomorrow"
+        }
+        return nil
+    }
+
+    private func ordinalSuffix(for day: Int) -> String {
+        let lastDigit = day % 10
+        let lastTwoDigits = day % 100
+        if lastTwoDigits >= 11 && lastTwoDigits <= 13 {
+            return "th"
+        }
+        switch lastDigit {
+        case 1: return "st"
+        case 2: return "nd"
+        case 3: return "rd"
+        default: return "th"
         }
     }
-    var onSave: (() -> Void)?
 
-    override var intrinsicContentSize: CGSize {
-        let textViewHeight = textViewHeightConstraint.constant
-        let containerHeight = textViewHeight + 24 // 12 padding top + 12 padding bottom
-        return CGSize(width: UIView.noIntrinsicMetric, height: max(60, containerHeight))
-    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "calendar")
+                    .font(.system(size: 24))
+                    .foregroundColor(focusColor)
 
+                Text("Date")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(AppColors.primaryText(for: colorScheme))
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupView()
-    }
+                Spacer()
+            }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
+            HStack(spacing: 16) {
+                // Previous day button
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if let prevDay = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) {
+                            selectedDate = prevDay
+                        }
+                    }
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(focusColor)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            Circle()
+                                .fill(AppColors.tertiaryBackground(for: colorScheme))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
 
-    private func setupView() {
-        backgroundColor = UIColor.systemBackground
+                // Date display (tappable to open date picker)
+                Button(action: {
+                    showingDatePicker = true
+                }) {
+                    VStack(spacing: 4) {
+                        Text(dateString)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(AppColors.primaryText(for: colorScheme))
 
-        addSubview(textView)
-        addSubview(sendButton)
+                        if let relativeText = relativeDayText {
+                            Text(relativeText)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(PlainButtonStyle())
 
-        // Constraints for textView - grow upward by anchoring to bottom
-        textViewHeightConstraint = textView.heightAnchor.constraint(equalToConstant: 36)
-        textViewHeightConstraint.priority = UILayoutPriority(999) // Allow constraint to be adjusted
-
-        // Text view grows upward - anchor to bottom, allow top to move up
-        NSLayoutConstraint.activate([
-            textView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            textView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
-            textView.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 12),
-            textViewHeightConstraint,
-            textView.heightAnchor.constraint(greaterThanOrEqualToConstant: 36) // Minimum height
-        ])
-
-        // Constraints for sendButton - align to textView bottom (iMessage size)
-        NSLayoutConstraint.activate([
-            sendButton.leadingAnchor.constraint(equalTo: textView.trailingAnchor, constant: 8),
-            sendButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            sendButton.bottomAnchor.constraint(equalTo: textView.bottomAnchor),
-            sendButton.widthAnchor.constraint(equalToConstant: 44),
-            sendButton.heightAnchor.constraint(equalToConstant: 44),
-            sendButton.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 12) // Ensure button is visible
-        ])
-
-        // Ensure container has minimum height and can grow
-        containerHeightConstraint = heightAnchor.constraint(equalToConstant: 60)
-        containerHeightConstraint.priority = UILayoutPriority(999)
-        containerHeightConstraint.isActive = true
-
-        sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
-
-        // Add placeholder label
-        placeholderLabel = UILabel()
-        placeholderLabel.text = "Journal entry..."
-        placeholderLabel.textColor = UIColor.placeholderText
-        placeholderLabel.font = UIFont.systemFont(ofSize: 17)
-        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(placeholderLabel)
-
-        // Placeholder aligned to text view's top (which moves up as text grows)
-        NSLayoutConstraint.activate([
-            placeholderLabel.leadingAnchor.constraint(equalTo: textView.leadingAnchor, constant: 12),
-            placeholderLabel.topAnchor.constraint(equalTo: textView.topAnchor, constant: 8),
-            placeholderLabel.trailingAnchor.constraint(lessThanOrEqualTo: textView.trailingAnchor, constant: -12)
-        ])
-
-        // Show/hide placeholder based on text
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(textDidChange),
-            name: UITextView.textDidChangeNotification,
-            object: textView
+                // Next day button
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) {
+                            selectedDate = nextDay
+                        }
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(focusColor)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            Circle()
+                                .fill(AppColors.tertiaryBackground(for: colorScheme))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(AppColors.tertiaryBackground(for: colorScheme))
         )
-
-        // Set initial container height
-        containerHeightConstraint.constant = 60
-
-        // Update placeholder and send button after setup
-        // Note: Text will be set in makeUIView, so placeholder will update there
-        updatePlaceholder()
-        updateSendButton()
-
-        // Auto-focus
-        DispatchQueue.main.async {
-            self.textView.becomeFirstResponder()
+        .sheet(isPresented: $showingDatePicker) {
+            NavigationView {
+                DatePicker(
+                    "Select Date",
+                    selection: $selectedDate,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.graphical)
+                .navigationTitle("Select Date")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            showingDatePicker = false
+                        }
+                        .foregroundColor(focusColor)
+                    }
+                }
+            }
         }
-    }
-
-    @objc func textDidChange() {
-        updatePlaceholder()
-
-        // Update height
-        let size = CGSize(width: textView.frame.width, height: .infinity)
-        let estimatedSize = textView.sizeThatFits(size)
-
-        let minHeight: CGFloat = 36
-        let maxHeight: CGFloat = 90 // ~3 lines max, then scroll
-        let newTextViewHeight = max(minHeight, min(estimatedSize.height, maxHeight))
-
-        textViewHeightConstraint.constant = newTextViewHeight
-
-        // Update container height to match text view height + padding
-        let newContainerHeight = newTextViewHeight + 24 // 12 top + 12 bottom padding
-        containerHeightConstraint.constant = max(60, newContainerHeight)
-
-        // Enable scrolling if content exceeds max height
-        textView.isScrollEnabled = estimatedSize.height > maxHeight
-
-        // Invalidate intrinsic content size
-        invalidateIntrinsicContentSize()
-
-        UIView.animate(withDuration: 0.1) {
-            self.layoutIfNeeded()
-        }
-    }
-
-    func updatePlaceholder() {
-        placeholderLabel.isHidden = !textView.text.isEmpty
-    }
-
-    func updateSendButton() {
-        let isEmpty = textView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        sendButton.isEnabled = !isEmpty
-        sendButton.tintColor = isEmpty ? UIColor.systemGray3 : UIColor(accentColor)
-    }
-
-    @objc private func sendButtonTapped() {
-        onSave?()
     }
 }
 
+// MARK: - Compact Weather View
+struct CompactWeatherView: View {
+    let weather: WeatherData
+    @Environment(\.colorScheme) var colorScheme
+    
+    // Estimate current temp as midpoint between high and low (or use a better approximation)
+    private var currentTemp: Int {
+        // Simple approximation: assume current temp is closer to high during day
+        // For now, use midpoint
+        return (weather.highTemp + weather.lowTemp) / 2
+    }
+    
+    private var tempRange: Int {
+        weather.highTemp - weather.lowTemp
+    }
+    
+    private var tempProgress: Double {
+        guard tempRange > 0 else { return 0.5 }
+        let normalizedCurrent = Double(currentTemp - weather.lowTemp) / Double(tempRange)
+        return max(0, min(1, normalizedCurrent))
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Weather icon
+            Image(systemName: weather.weatherIcon())
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+            
+            // Temperature gauge
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background track
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.secondary.opacity(0.2))
+                        .frame(height: 6)
+                    
+                    // Temperature range gradient
+                    HStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue, .orange],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(height: 6)
+                    }
+                    
+                    // Current temp indicator
+                    Circle()
+                        .fill(Color.primary)
+                        .frame(width: 10, height: 10)
+                        .offset(x: geometry.size.width * tempProgress - 5)
+                }
+            }
+            .frame(height: 10)
+            .frame(maxWidth: 80)
+            
+            // High temp
+            HStack(spacing: 2) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                Text("\(weather.highTemp)°")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            
+            // Low temp
+            HStack(spacing: 2) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                Text("\(weather.lowTemp)°")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            
+            // Precipitation chance
+            if weather.precipitationChance > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.blue)
+                    Text("\(weather.precipitationChance)%")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+}
 
 #Preview {
-    FocusView(focusStore: FocusStore())
+    FocusView(focusStore: FocusStore(), streakManager: StreakManager())
 }
