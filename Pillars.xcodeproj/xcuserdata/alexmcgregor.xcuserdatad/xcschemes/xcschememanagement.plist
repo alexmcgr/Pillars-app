@@ -9,6 +9,11 @@
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
+		<key>PillarsTests.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>PillarsWidgetExtension.xcscheme</key>
 		<dict>
 			<key>isShown</key>
@@ -20,6 +25,11 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>43CDCCC02EBAFAC800809D98</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>43CDCCD02EBAFAC900809D98</key>
 		<dict>
 			<key>primary</key>
 			<true/>

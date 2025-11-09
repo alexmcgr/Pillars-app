@@ -16,9 +16,6 @@ struct CalendarView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Month header with navigation
-                monthHeader
-
                 // Calendar grid
                 calendarGrid
             }
@@ -26,9 +23,7 @@ struct CalendarView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
+                    Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .foregroundColor(AppColors.primaryText(for: colorScheme))
                     }
@@ -37,36 +32,7 @@ struct CalendarView: View {
         }
     }
 
-    private var monthHeader: some View {
-        HStack {
-            Button(action: {
-                previousMonth()
-            }) {
-                Image(systemName: "chevron.left")
-                    .foregroundColor(AppColors.primaryText(for: colorScheme))
-                    .font(.system(size: 18, weight: .semibold))
-            }
-
-            Spacer()
-
-            Text(monthYearString)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(AppColors.primaryText(for: colorScheme))
-
-            Spacer()
-
-            Button(action: {
-                nextMonth()
-            }) {
-                Image(systemName: "chevron.right")
-                    .foregroundColor(AppColors.primaryText(for: colorScheme))
-                    .font(.system(size: 18, weight: .semibold))
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(AppColors.tertiaryBackground(for: colorScheme))
-    }
+    // Month header with navigation removed per design
 
     private var calendarGrid: some View {
         let calendar = Calendar.current
@@ -123,17 +89,7 @@ struct CalendarView: View {
         return formatter.string(from: currentMonth)
     }
 
-    private func previousMonth() {
-        if let newMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) {
-            currentMonth = newMonth
-        }
-    }
-
-    private func nextMonth() {
-        if let newMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) {
-            currentMonth = newMonth
-        }
-    }
+    // Month navigation removed per design
 }
 
 // CalendarDayView is now defined in FullCalendarView.swift

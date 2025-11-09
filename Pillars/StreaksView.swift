@@ -29,12 +29,16 @@ struct StreaksCard: View {
 
     private var relevantStreaks: [Streak] {
         guard let focusId = currentFocusId else {
-            return Array(streakManager.streaks.prefix(2))
+            // Filter out completed streaks and show up to 2
+            let incomplete = streakManager.streaks.filter { !streakManager.isStreakCompleteThisWeek($0) }
+            return Array(incomplete.prefix(2))
         }
 
-        // Filter streaks that are associated with current focus
+        // Filter streaks that are associated with current focus AND not complete this week
         let filtered = streakManager.streaks.filter { streak in
-            streak.associatedFocusIds.isEmpty || streak.associatedFocusIds.contains(focusId)
+            let isRelevant = streak.associatedFocusIds.isEmpty || streak.associatedFocusIds.contains(focusId)
+            let isIncomplete = !streakManager.isStreakCompleteThisWeek(streak)
+            return isRelevant && isIncomplete
         }
 
         return Array(filtered.prefix(2))
@@ -168,10 +172,8 @@ struct StreaksDetailView: View {
 
         return NavigationView {
             ZStack {
-                FocusGradientBackground(
-                    focusColor: focusColor,
-                    colorScheme: colorScheme
-                )
+                Color(UIColor.systemGroupedBackground)
+                    .ignoresSafeArea()
 
                 if streakManager.streaks.isEmpty {
                     VStack(spacing: 16) {
@@ -284,7 +286,7 @@ struct StreakDetailRow: View {
                         Label("Delete", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                         .font(.system(size: 22))
                         .foregroundColor(AppColors.primaryText(for: colorScheme))
                 }

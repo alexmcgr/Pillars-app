@@ -12,6 +12,7 @@ struct SettingsView: View {
     @ObservedObject var focusStore: FocusStore
     @StateObject private var themeManager = ThemeManager.shared
     @StateObject private var cardOrderManager = CardOrderManager.shared
+    @StateObject private var notificationManager = NotificationManager.shared
     @Environment(\.colorScheme) var systemColorScheme
 
     // State for custom labels
@@ -76,6 +77,41 @@ struct SettingsView: View {
                             }
                         } header: {
                             Text("Customization")
+                        }
+                        .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
+
+                        Section {
+                            DatePicker(
+                                "Journal Reminder",
+                                selection: $notificationManager.notificationTime,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                            .datePickerStyle(.compact)
+                            .tint(accentColor)
+                            .foregroundColor(AppColors.primaryText(for: activeColorScheme))
+                            
+                            DatePicker(
+                                "Todo AM Reminder",
+                                selection: $notificationManager.todoAMTime,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                            .datePickerStyle(.compact)
+                            .tint(accentColor)
+                            .foregroundColor(AppColors.primaryText(for: activeColorScheme))
+                            
+                            DatePicker(
+                                "Todo PM Reminder",
+                                selection: $notificationManager.todoPMTime,
+                                displayedComponents: [.hourAndMinute]
+                            )
+                            .datePickerStyle(.compact)
+                            .tint(accentColor)
+                            .foregroundColor(AppColors.primaryText(for: activeColorScheme))
+                        } header: {
+                            Text("Notifications")
+                        } footer: {
+                            Text("Configure default reminder times for journal and todos")
+                                .foregroundColor(AppColors.secondaryText(for: activeColorScheme))
                         }
                         .listRowBackground(AppColors.tertiaryBackground(for: activeColorScheme))
 

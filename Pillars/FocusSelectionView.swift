@@ -15,7 +15,7 @@ struct FocusSelectionView: View {
     @Environment(\.colorScheme) var colorScheme
 
     private var isToday: Bool {
-        Calendar.current.isDateInToday(selectedDate)
+        DateUtils.appIsDateInToday(selectedDate)
     }
 
     private var selectedFocusId: Int? {

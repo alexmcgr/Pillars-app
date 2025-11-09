@@ -6,21 +6,26 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct FocusView: View {
     @ObservedObject var focusStore: FocusStore
     @ObservedObject var streakManager: StreakManager
     @StateObject private var cardOrderManager = CardOrderManager.shared
-    @State private var selectedDate: Date = Date()
+    @State private var selectedDate: Date = DateUtils.appToday()
     @State private var showingJournalSheet = false
     @State private var journalText: String = ""
     @State private var showTestSplash = false
     @State private var weatherData: WeatherData?
     @State private var isLoadingWeather = false
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("lastActiveAt") private var lastActiveAt: Double = 0
+    @AppStorage("lastAppDayStamp") private var lastAppDayStamp: Double = 0
+    private let snapThreshold: TimeInterval = 60 * 30 // 30 minutes
 
     private var isToday: Bool {
-        Calendar.current.isDateInToday(selectedDate)
+        DateUtils.appIsDateInToday(selectedDate)
     }
 
     private var selectedFocusId: Int? {
@@ -58,30 +63,7 @@ struct FocusView: View {
                     }
                 }
                 .scrollContentBackground(.hidden)
-                .gesture(
-                    DragGesture(minimumDistance: 20)
-                        .onEnded { value in
-                            let horizontalAmount = value.translation.width
-                            let verticalAmount = value.translation.height
-
-                            // Only navigate if swipe is more horizontal than vertical
-                            if abs(horizontalAmount) > abs(verticalAmount) {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    if horizontalAmount < 0 {
-                                        // Swipe left - next day
-                                        if let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) {
-                                            selectedDate = nextDay
-                                        }
-                                    } else {
-                                        // Swipe right - previous day
-                                        if let prevDay = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) {
-                                            selectedDate = prevDay
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                )
+                // Date swipe navigation removed per design
 
                 // Test splash screen overlay
                 if showTestSplash {
@@ -113,6 +95,10 @@ struct FocusView: View {
             )
         }
         .onAppear {
+            // Ensure we start on today's app-day (anchored at local noon to avoid boundary issues)
+            let todayBase = DateUtils.appStartOfDay(for: Date())
+            let noon = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: todayBase) ?? todayBase
+            selectedDate = noon
             // Load existing journal entry if there is one
             journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
             // Load weather if it's today
@@ -128,6 +114,39 @@ struct FocusView: View {
                 loadWeather()
             } else {
                 weatherData = nil
+            }
+        }
+        // Open journal when user taps the local notification
+        .onReceive(NotificationCenter.default.publisher(for: .openJournalFromNotification)) { _ in
+            selectedDate = DateUtils.appToday()
+            journalText = focusStore.getJournalEntry(for: selectedDate) ?? ""
+            showingJournalSheet = true
+        }
+        // When scene phases change, conditionally snap to today or keep context
+        .onChange(of: scenePhase) { newPhase in
+            switch newPhase {
+            case .background:
+                let now = Date()
+                lastActiveAt = now.timeIntervalSince1970
+                let appDay = DateUtils.appStartOfDay(for: now)
+                lastAppDayStamp = appDay.timeIntervalSince1970
+            case .active:
+                let now = Date()
+                let appDayNow = DateUtils.appStartOfDay(for: now)
+                let lastAppDay = Date(timeIntervalSince1970: lastAppDayStamp)
+                let elapsed = now.timeIntervalSince1970 - lastActiveAt
+                let crossedBoundary = !DateUtils.appIsSameAppDay(appDayNow, lastAppDay)
+                let exceededThreshold = elapsed > snapThreshold
+
+                if crossedBoundary || exceededThreshold {
+                    let base = appDayNow
+                    let noon = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: base) ?? base
+                    if !DateUtils.appIsSameAppDay(selectedDate, noon) {
+                        selectedDate = noon
+                    }
+                }
+            default:
+                break
             }
         }
     }
@@ -172,7 +191,7 @@ struct FocusView: View {
                 selectedDate: selectedDate
             )
         case .dateNavigation:
-            DateNavigationCard(selectedDate: $selectedDate, focusStore: focusStore)
+            EmptyView()
         }
     }
 
@@ -240,9 +259,10 @@ struct FocusView: View {
     private var actualDateString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM"
-        let monthName = formatter.string(from: selectedDate)
+        let appStart = DateUtils.appStartOfDay(for: selectedDate)
+        let monthName = formatter.string(from: appStart)
 
-        let day = Calendar.current.component(.day, from: selectedDate)
+        let day = Calendar.current.component(.day, from: appStart)
         let suffix = ordinalSuffix(for: day)
 
         return "\(monthName) \(day)\(suffix)"
@@ -267,11 +287,13 @@ struct FocusView: View {
     }
 
     private var relativeDayText: String? {
-        if Calendar.current.isDateInToday(selectedDate) {
+        let appDay = DateUtils.appStartOfDay(for: selectedDate)
+        let today = DateUtils.appToday()
+        if DateUtils.appIsSameAppDay(appDay, today) {
             return "Today"
-        } else if Calendar.current.isDateInYesterday(selectedDate) {
+        } else if DateUtils.appIsSameAppDay(appDay, DateUtils.appYesterday()) {
             return "Yesterday"
-        } else if Calendar.current.isDateInTomorrow(selectedDate) {
+        } else if DateUtils.appIsSameAppDay(appDay, DateUtils.appTomorrow()) {
             return "Tomorrow"
         }
         return nil
@@ -284,6 +306,7 @@ struct TodoListCard: View {
     let selectedDate: Date
     @Environment(\.colorScheme) var colorScheme
     @State private var showingAddTodo = false
+    @State private var showingDetailView = false
     @State private var newTodoText = ""
 
     private var todos: [TodoItem] {
@@ -312,20 +335,15 @@ struct TodoListCard: View {
                 Spacer()
 
                 Button(action: {
-                    showingAddTodo = true
+                    showingDetailView = true
                 }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(AppColors.primaryText(for: colorScheme))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.secondary)
                 }
             }
 
-            if todos.isEmpty {
-                Text("No tasks for today")
-                    .font(.system(size: 15))
-                    .foregroundStyle(.tertiary)
-                    .padding(.vertical, 8)
-            } else {
+            if !todos.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(todos) { todo in
                         TodoRow(
@@ -338,6 +356,27 @@ struct TodoListCard: View {
                     }
                 }
             }
+            
+            // Inline quick add text field
+            HStack(spacing: 12) {
+                Image(systemName: "circle")
+                    .font(.system(size: 20))
+                    .foregroundColor(.secondary)
+                
+                TextField("Add a todo...", text: $newTodoText, onCommit: {
+                    let text = newTodoText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !text.isEmpty else { return }
+                    // Clear first so the next row shows the placeholder immediately
+                    newTodoText = ""
+                    // Add on next runloop to avoid any UI race with clearing the field
+                    DispatchQueue.main.async {
+                        focusStore.addTodo(for: selectedDate, text: text)
+                    }
+                })
+                .font(.system(size: 15))
+                .foregroundColor(AppColors.primaryText(for: colorScheme))
+                .submitLabel(.done)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -345,15 +384,8 @@ struct TodoListCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(AppColors.tertiaryBackground(for: colorScheme))
         )
-        .sheet(isPresented: $showingAddTodo) {
-            AddTodoSheet(newTodoText: $newTodoText) {
-                if !newTodoText.isEmpty {
-                    focusStore.addTodo(for: selectedDate, text: newTodoText)
-                    newTodoText = ""
-                    showingAddTodo = false
-                }
-            }
-            .presentationDetents([.height(200)])
+        .sheet(isPresented: $showingDetailView) {
+            TodosDetailView(focusStore: focusStore, selectedDate: selectedDate)
         }
     }
 }
@@ -536,157 +568,6 @@ struct JournalEntrySheet: View {
     }
 }
 
-// MARK: - Date Navigation Card
-struct DateNavigationCard: View {
-    @Binding var selectedDate: Date
-    @ObservedObject var focusStore: FocusStore
-    @Environment(\.colorScheme) var colorScheme
-    @State private var showingDatePicker = false
-
-    private var focusColor: Color {
-        guard let focus = focusStore.getFocus(for: selectedDate),
-              let choice = FocusChoice.defaultChoices.first(where: { $0.id == focus.choiceId }) else {
-            return .blue
-        }
-        return choice.color.color
-    }
-
-    private var dateString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM"
-        let monthName = formatter.string(from: selectedDate)
-        let day = Calendar.current.component(.day, from: selectedDate)
-        let suffix = ordinalSuffix(for: day)
-        return "\(monthName) \(day)\(suffix)"
-    }
-
-    private var relativeDayText: String? {
-        if Calendar.current.isDateInToday(selectedDate) {
-            return "Today"
-        } else if Calendar.current.isDateInYesterday(selectedDate) {
-            return "Yesterday"
-        } else if Calendar.current.isDateInTomorrow(selectedDate) {
-            return "Tomorrow"
-        }
-        return nil
-    }
-
-    private func ordinalSuffix(for day: Int) -> String {
-        let lastDigit = day % 10
-        let lastTwoDigits = day % 100
-        if lastTwoDigits >= 11 && lastTwoDigits <= 13 {
-            return "th"
-        }
-        switch lastDigit {
-        case 1: return "st"
-        case 2: return "nd"
-        case 3: return "rd"
-        default: return "th"
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.system(size: 24))
-                    .foregroundColor(focusColor)
-
-                Text("Date")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(AppColors.primaryText(for: colorScheme))
-
-                Spacer()
-            }
-
-            HStack(spacing: 16) {
-                // Previous day button
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        if let prevDay = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) {
-                            selectedDate = prevDay
-                        }
-                    }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(focusColor)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Circle()
-                                .fill(AppColors.tertiaryBackground(for: colorScheme))
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                // Date display (tappable to open date picker)
-                Button(action: {
-                    showingDatePicker = true
-                }) {
-                    VStack(spacing: 4) {
-                        Text(dateString)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(AppColors.primaryText(for: colorScheme))
-
-                        if let relativeText = relativeDayText {
-                            Text(relativeText)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                // Next day button
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        if let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) {
-                            selectedDate = nextDay
-                        }
-                    }
-                }) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(focusColor)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Circle()
-                                .fill(AppColors.tertiaryBackground(for: colorScheme))
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(AppColors.tertiaryBackground(for: colorScheme))
-        )
-        .sheet(isPresented: $showingDatePicker) {
-            NavigationView {
-                DatePicker(
-                    "Select Date",
-                    selection: $selectedDate,
-                    displayedComponents: [.date]
-                )
-                .datePickerStyle(.graphical)
-                .navigationTitle("Select Date")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showingDatePicker = false
-                        }
-                        .foregroundColor(focusColor)
-                    }
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Compact Weather View
 struct CompactWeatherView: View {
     let weather: WeatherData
@@ -722,29 +603,30 @@ struct CompactWeatherView: View {
                     // Background track
                     RoundedRectangle(cornerRadius: 4)
                         .fill(Color.secondary.opacity(0.2))
-                        .frame(height: 6)
+                        .frame(width: geometry.size.width, height: 6)
                     
                     // Temperature range gradient
-                    HStack(spacing: 0) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(
-                                LinearGradient(
-                                    colors: [.blue, .orange],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            LinearGradient(
+                                colors: [.blue, .orange],
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                            .frame(height: 6)
-                    }
+                        )
+                        .frame(width: geometry.size.width, height: 6)
                     
-                    // Current temp indicator
+                    // Current temp indicator - centered at the progress position
                     Circle()
                         .fill(Color.primary)
-                        .frame(width: 10, height: 10)
-                        .offset(x: geometry.size.width * tempProgress - 5)
+                        .frame(width: 12, height: 12)
+                        .position(
+                            x: max(6, min(geometry.size.width - 6, geometry.size.width * tempProgress)),
+                            y: geometry.size.height / 2
+                        )
                 }
             }
-            .frame(height: 10)
+            .frame(height: 12)
             .frame(maxWidth: 80)
             
             // High temp

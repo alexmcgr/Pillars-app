@@ -8,6 +8,38 @@
 import Foundation
 import SwiftUI
 
+// Utility for app-specific day boundary (4am)
+struct DateUtils {
+    static let boundaryHour: Int = 4
+
+    static func appStartOfDay(for date: Date, calendar: Calendar = .current) -> Date {
+        let shifted = calendar.date(byAdding: .hour, value: -boundaryHour, to: date) ?? date
+        return calendar.startOfDay(for: shifted)
+    }
+
+    static func appIsDateInToday(_ date: Date, calendar: Calendar = .current) -> Bool {
+        appStartOfDay(for: date, calendar: calendar) == appStartOfDay(for: Date(), calendar: calendar)
+    }
+
+    static func appIsSameAppDay(_ lhs: Date, _ rhs: Date, calendar: Calendar = .current) -> Bool {
+        appStartOfDay(for: lhs, calendar: calendar) == appStartOfDay(for: rhs, calendar: calendar)
+    }
+
+    static func appToday(calendar: Calendar = .current) -> Date {
+        appStartOfDay(for: Date(), calendar: calendar)
+    }
+
+    static func appYesterday(calendar: Calendar = .current) -> Date {
+        let today = appToday(calendar: calendar)
+        return calendar.date(byAdding: .day, value: -1, to: today) ?? today
+    }
+
+    static func appTomorrow(calendar: Calendar = .current) -> Date {
+        let today = appToday(calendar: calendar)
+        return calendar.date(byAdding: .day, value: 1, to: today) ?? today
+    }
+}
+
 // Represents a focus choice with a label and color
 struct FocusChoice: Identifiable, Codable {
     let id: Int

@@ -145,11 +145,12 @@ class StreakManager: ObservableObject {
         var calendar = Calendar.current
         // Ensure Sunday is the first day of the week
         calendar.firstWeekday = 1 // 1 = Sunday, 2 = Monday, etc.
-        return calendar.dateInterval(of: .weekOfYear, for: date)
+        let base = DateUtils.appStartOfDay(for: date)
+        return calendar.dateInterval(of: .weekOfYear, for: base)
     }
 
     func getCompletionsForCurrentWeek(streakId: UUID) -> [StreakCompletion] {
-        let now = Date()
+        let now = DateUtils.appToday()
         guard let weekInterval = getWeekInterval(for: now) else {
             return []
         }
@@ -174,12 +175,10 @@ class StreakManager: ObservableObject {
     }
 
     func isCompletedToday(streakId: UUID, date: Date = Date()) -> Bool {
-        let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
-
+        let normalizedDate = DateUtils.appStartOfDay(for: date)
         return completions.contains { completion in
             completion.streakId == streakId &&
-            calendar.isDate(completion.date, inSameDayAs: normalizedDate)
+            DateUtils.appIsSameAppDay(completion.date, normalizedDate)
         }
     }
 

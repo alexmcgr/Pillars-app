@@ -16,9 +16,9 @@ struct CalendarCell: Identifiable {
 
 struct FullCalendarView: View {
     @ObservedObject var focusStore: FocusStore
-    @State private var currentMonth: Date = Date()
-    @State private var selectedDate: Date? = Date()
-    @State private var menuSelectedDate: Date = Date()
+    @State private var currentMonth: Date = DateUtils.appToday()
+    @State private var selectedDate: Date? = DateUtils.appToday()
+    @State private var menuSelectedDate: Date = DateUtils.appToday()
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -91,7 +91,7 @@ struct FullCalendarView: View {
                     CalendarDayView(
                         day: day,
                         date: date,
-                        isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate ?? Date()),
+                        isSelected: DateUtils.appIsSameAppDay(date, selectedDate ?? Date()),
                         focusStore: focusStore,
                         onTap: {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -128,9 +128,15 @@ struct FullCalendarView: View {
 
         // Add cells for each day of the month
         let daysInMonth = calendar.range(of: .day, in: .month, for: firstDayOfMonth)?.count ?? 30
+        let comps = calendar.dateComponents([.year, .month], from: firstDayOfMonth)
         for dayNumber in 1...daysInMonth {
-            if let date = calendar.date(byAdding: .day, value: dayNumber - 1, to: firstDayOfMonth) {
-                cells.append(CalendarCell(day: dayNumber, date: calendar.startOfDay(for: date)))
+            var dayComponents = DateComponents()
+            dayComponents.year = comps.year
+            dayComponents.month = comps.month
+            dayComponents.day = dayNumber
+            dayComponents.hour = 12 // set to noon to avoid timezone/DST and 4am boundary issues
+            if let date = calendar.date(from: dayComponents) {
+                cells.append(CalendarCell(day: dayNumber, date: date))
             }
         }
 
@@ -243,7 +249,7 @@ struct CalendarDayView: View {
     @Environment(\.colorScheme) var colorScheme
 
     private var isToday: Bool {
-        Calendar.current.isDateInToday(date)
+        DateUtils.appIsDateInToday(date)
     }
 
     private var hasJournalEntry: Bool {

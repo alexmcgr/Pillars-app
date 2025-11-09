@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		435326B42EC00992001CB8A6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326B32EC00992001CB8A6 /* NotificationManager.swift */; };
+		435326B62EC01347001CB8A6 /* TodosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326B52EC01347001CB8A6 /* TodosView.swift */; };
+		435326BC2EC06579001CB8A6 /* FocusStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326B82EC06579001CB8A6 /* FocusStoreTests.swift */; };
+		435326BD2EC06579001CB8A6 /* DateUtilsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326B72EC06579001CB8A6 /* DateUtilsTests.swift */; };
+		435326BE2EC06579001CB8A6 /* RecurringTodoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326BA2EC06579001CB8A6 /* RecurringTodoTests.swift */; };
+		435326BF2EC06579001CB8A6 /* NotificationManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326B92EC06579001CB8A6 /* NotificationManagerTests.swift */; };
+		435326C02EC06579001CB8A6 /* TodoItemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 435326BB2EC06579001CB8A6 /* TodoItemTests.swift */; };
 		43B404F12EBB3E9C008C2294 /* Green.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404EC2EBB3E9C008C2294 /* Green.png */; };
 		43B404F22EBB3E9C008C2294 /* Blue.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404ED2EBB3E9C008C2294 /* Blue.png */; };
 		43B404F32EBB3E9C008C2294 /* Red.png in Resources */ = {isa = PBXBuildFile; fileRef = 43B404EE2EBB3E9C008C2294 /* Red.png */; };
@@ -72,6 +79,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		435326B32EC00992001CB8A6 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		435326B52EC01347001CB8A6 /* TodosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodosView.swift; sourceTree = "<group>"; };
+		435326B72EC06579001CB8A6 /* DateUtilsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateUtilsTests.swift; sourceTree = "<group>"; };
+		435326B82EC06579001CB8A6 /* FocusStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusStoreTests.swift; sourceTree = "<group>"; };
+		435326B92EC06579001CB8A6 /* NotificationManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManagerTests.swift; sourceTree = "<group>"; };
+		435326BA2EC06579001CB8A6 /* RecurringTodoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringTodoTests.swift; sourceTree = "<group>"; };
+		435326BB2EC06579001CB8A6 /* TodoItemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoItemTests.swift; sourceTree = "<group>"; };
 		43B404EC2EBB3E9C008C2294 /* Green.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Green.png; sourceTree = "<group>"; };
 		43B404ED2EBB3E9C008C2294 /* Blue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Blue.png; sourceTree = "<group>"; };
 		43B404EE2EBB3E9C008C2294 /* Red.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Red.png; sourceTree = "<group>"; };
@@ -170,6 +184,8 @@
 		43CDCCC32EBAFAC800809D98 /* Pillars */ = {
 			isa = PBXGroup;
 			children = (
+				435326B52EC01347001CB8A6 /* TodosView.swift */,
+				435326B32EC00992001CB8A6 /* NotificationManager.swift */,
 				43B405132EBB4F4F008C2294 /* Pillars.entitlements */,
 				43B404ED2EBB3E9C008C2294 /* Blue.png */,
 				43B404EC2EBB3E9C008C2294 /* Green.png */,
@@ -215,6 +231,11 @@
 		43CDCCD42EBAFAC900809D98 /* PillarsTests */ = {
 			isa = PBXGroup;
 			children = (
+				435326B72EC06579001CB8A6 /* DateUtilsTests.swift */,
+				435326B82EC06579001CB8A6 /* FocusStoreTests.swift */,
+				435326B92EC06579001CB8A6 /* NotificationManagerTests.swift */,
+				435326BA2EC06579001CB8A6 /* RecurringTodoTests.swift */,
+				435326BB2EC06579001CB8A6 /* TodoItemTests.swift */,
 				43CDCCD52EBAFAC900809D98 /* PillarsTests.swift */,
 			);
 			path = PillarsTests;
@@ -387,6 +408,8 @@
 				43CDCCE32EBAFAC900809DB3 /* StreaksView.swift in Sources */,
 				43CDCCE32EBAFAC900809DB5 /* SFSymbolPicker.swift in Sources */,
 				43CDCCE32EBAFAC900809DB7 /* CardOrderManager.swift in Sources */,
+				435326B62EC01347001CB8A6 /* TodosView.swift in Sources */,
+				435326B42EC00992001CB8A6 /* NotificationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -394,6 +417,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				435326BC2EC06579001CB8A6 /* FocusStoreTests.swift in Sources */,
+				435326BD2EC06579001CB8A6 /* DateUtilsTests.swift in Sources */,
+				435326BE2EC06579001CB8A6 /* RecurringTodoTests.swift in Sources */,
+				435326BF2EC06579001CB8A6 /* NotificationManagerTests.swift in Sources */,
+				435326C02EC06579001CB8A6 /* TodoItemTests.swift in Sources */,
 				43CDCCD62EBAFAC900809D98 /* PillarsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -611,8 +639,10 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 284888JV3K;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
@@ -630,8 +660,10 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 284888JV3K;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;

@@ -73,21 +73,21 @@ struct DayView: View {
         return calendar.component(.day, from: dayDate)
     }
 
-    // Get the date for a specific day index in the current week (starting Sunday)
+    // Get the date for a specific day index in the current app-week (starting Sunday)
     private func getDayDate(for index: Int) -> Date {
         let calendar = Calendar.current
-        let today = Date()
+        let appToday = DateUtils.appToday()
 
-        // Find the start of the week (Sunday)
-        let weekday = calendar.component(.weekday, from: today)
+        // Find the start of the week (Sunday) based on appToday
+        let weekday = calendar.component(.weekday, from: appToday)
         // Calendar weekday: 1 = Sunday, 2 = Monday, etc.
         let daysFromSunday = weekday - 1
-        let startOfWeek = calendar.date(byAdding: .day, value: -daysFromSunday, to: today) ?? today
+        let startOfWeek = calendar.date(byAdding: .day, value: -daysFromSunday, to: appToday) ?? appToday
 
-        // Get the start of the day
-        let startOfWeekDay = calendar.startOfDay(for: startOfWeek)
+        // Normalize to app start-of-day (4am boundary)
+        let startOfWeekDay = DateUtils.appStartOfDay(for: startOfWeek)
 
-        return calendar.date(byAdding: .day, value: index, to: startOfWeekDay) ?? today
+        return calendar.date(byAdding: .day, value: index, to: startOfWeekDay) ?? appToday
     }
 
     // Get the color for a specific date

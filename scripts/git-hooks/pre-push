@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCHEME="PillarsTests"
+PROJECT="Pillars.xcodeproj"
+DESTINATION="platform=iOS Simulator,OS=17.0,name=iPhone 15"
+
+echo "Running tests before push..."
+if ! command -v xcodebuild >/dev/null 2>&1; then
+  echo "xcodebuild not found. Skipping tests."
+  exit 0
+fi
+
+xcodebuild -project "$PROJECT" -scheme "$SCHEME" -destination "$DESTINATION" -quiet test
+
+echo "✅ Tests passed. Proceeding with push."

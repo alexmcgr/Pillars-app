@@ -89,11 +89,11 @@ struct JumpToDaySheet: View {
     private var recentDays: [Date] {
         var days: [Date] = []
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let appToday = DateUtils.appToday()
 
         for dayOffset in stride(from: -(dayRange - 1), through: 0, by: 1) {
-            if let day = calendar.date(byAdding: .day, value: dayOffset, to: today) {
-                days.append(day)
+            if let day = calendar.date(byAdding: .day, value: dayOffset, to: appToday) {
+                days.append(DateUtils.appStartOfDay(for: day))
             }
         }
         return days.reversed()
@@ -114,7 +114,7 @@ struct JumpToDaySheet: View {
     }
 
     private func isSelectedDate(_ date: Date) -> Bool {
-        Calendar.current.isDate(date, inSameDayAs: selectedDate)
+        DateUtils.appIsSameAppDay(date, selectedDate)
     }
 
     var body: some View {

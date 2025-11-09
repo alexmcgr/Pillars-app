@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import UserNotifications
 
 class FocusStore: ObservableObject {
     @Published var selections: [String: DailyFocus] = [:]
@@ -24,20 +25,20 @@ class FocusStore: ObservableObject {
         loadTodos()
     }
 
+ 
+
     // Get the focus selection for a specific date
     func getFocus(for date: Date) -> DailyFocus? {
-        // Normalize date to start of day for consistent comparison
-        let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
+        // Normalize date to app start of day (4am boundary) for consistent comparison
+        let normalizedDate = DateUtils.appStartOfDay(for: date)
         let key = dateKey(for: normalizedDate)
         return selections[key]
     }
 
     // Set the focus selection for a specific date
     func setFocus(for date: Date, choiceId: Int) {
-        // Normalize date to start of day for consistent comparison
-        let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
+        // Normalize date to app start of day (4am boundary) for consistent comparison
+        let normalizedDate = DateUtils.appStartOfDay(for: date)
         let key = dateKey(for: normalizedDate)
 
         // Preserve existing journal entry if there is one
@@ -46,17 +47,16 @@ class FocusStore: ObservableObject {
         selections[key] = focus
         saveSelections()
 
-        // Update app icon if setting focus for today
-        if calendar.isDateInToday(normalizedDate) {
+        // Update app icon if setting focus for app-today
+        if DateUtils.appIsDateInToday(normalizedDate) {
             AppIconManager.shared.setIcon(for: choiceId)
         }
     }
 
     // Set the journal entry for a specific date
     func setJournalEntry(for date: Date, entry: String) {
-        // Normalize date to start of day for consistent comparison
-        let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
+        // Normalize date to app start of day (4am boundary) for consistent comparison
+        let normalizedDate = DateUtils.appStartOfDay(for: date)
         let key = dateKey(for: normalizedDate)
 
         if var focus = selections[key] {
@@ -64,9 +64,7 @@ class FocusStore: ObservableObject {
             focus.journalEntry = entry.isEmpty ? nil : entry
             selections[key] = focus
         } else {
-            // No focus set yet, create a placeholder (we'll use choiceId -1 to indicate no focus)
-            // Actually, let's not create an entry if there's no focus set
-            // We'll only store journal entries if there's a focus for that day
+            // Only store journal entries if there's a focus for that day
             return
         }
         saveSelections()
@@ -188,18 +186,91 @@ class FocusStore: ObservableObject {
 
     // MARK: - Todo List Management
 
-    // Get todos for a specific date
+    // Get todos for a specific date, including recurring instances
     func getTodos(for date: Date) -> [TodoItem] {
-        let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedDate = DateUtils.appStartOfDay(for: date)
         let key = dateKey(for: normalizedDate)
+        
+        // Create recurring todo instances if needed
+        createRecurringTodosIfNeeded(for: normalizedDate)
+        
         return dailyTodos[key] ?? []
+    }
+    
+    // Check and create recurring todo instances
+    private func createRecurringTodosIfNeeded(for date: Date) {
+        let calendar = Calendar.current
+        let targetKey = dateKey(for: date)
+        
+        // Get existing todos for this date
+        var existingTodos = dailyTodos[targetKey] ?? []
+        let existingIds = Set(existingTodos.map { $0.id })
+        
+        // Check all dates that have todos
+        for (storedKey, todos) in dailyTodos {
+            guard let storedDate = dateFromKey(storedKey) else { continue }
+            
+            // Skip if stored date is after target date
+            if storedDate > date { continue }
+            
+            for todo in todos where todo.recurrence != .none {
+                let shouldCreate: Bool = {
+                    switch todo.recurrence {
+                    case .weekly:
+                        // Same day of week
+                        let storedWeekday = calendar.component(.weekday, from: storedDate)
+                        let targetWeekday = calendar.component(.weekday, from: date)
+                        return storedWeekday == targetWeekday && date > storedDate
+                        
+                    case .monthly:
+                        // Same day of month
+                        let storedDay = calendar.component(.day, from: storedDate)
+                        let targetDay = calendar.component(.day, from: date)
+                        return storedDay == targetDay && date > storedDate
+                        
+                    case .none:
+                        return false
+                    }
+                }()
+                
+                if shouldCreate && !existingIds.contains(todo.id) {
+                    // Create new instance for this date
+                    var newTodo = todo
+                    newTodo.isCompleted = false // Reset completion
+                    newTodo.notificationId = nil // Will be rescheduled if needed
+                    
+                    // Schedule reminder if enabled
+                    if newTodo.hasReminder, let reminderTime = newTodo.reminderTime {
+                        let notificationId = NotificationManager.shared.scheduleTodoReminder(
+                            todoId: newTodo.id.uuidString,
+                            title: newTodo.text,
+                            date: date,
+                            reminderTime: reminderTime
+                        )
+                        newTodo.notificationId = notificationId
+                    }
+                    
+                    // Add to existing todos for this date
+                    existingTodos.append(newTodo)
+                    dailyTodos[targetKey] = existingTodos
+                    saveTodos()
+                    
+                    // Only create from the most recent occurrence
+                    break
+                }
+            }
+        }
+    }
+    
+    private func dateFromKey(_ key: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: key)
     }
 
     // Set todos for a specific date
     func setTodos(for date: Date, todos: [TodoItem]) {
-        let calendar = Calendar.current
-        let normalizedDate = calendar.startOfDay(for: date)
+        let normalizedDate = DateUtils.appStartOfDay(for: date)
         let key = dateKey(for: normalizedDate)
         dailyTodos[key] = todos
         saveTodos()
@@ -221,9 +292,23 @@ class FocusStore: ObservableObject {
         }
     }
 
+    // Update a todo
+    func updateTodo(for date: Date, todo: TodoItem) {
+        var todos = getTodos(for: date)
+        if let index = todos.firstIndex(where: { $0.id == todo.id }) {
+            todos[index] = todo
+            setTodos(for: date, todos: todos)
+        }
+    }
+
     // Delete a todo
     func deleteTodo(for date: Date, todoId: UUID) {
         var todos = getTodos(for: date)
+        // Cancel notification if exists
+        if let todo = todos.first(where: { $0.id == todoId }),
+           let notificationId = todo.notificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+        }
         todos.removeAll(where: { $0.id == todoId })
         setTodos(for: date, todos: todos)
     }
@@ -245,14 +330,36 @@ class FocusStore: ObservableObject {
 }
 
 // MARK: - TodoItem Model
+enum TodoRecurrence: String, Codable, CaseIterable {
+    case none = "None"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+}
+
 struct TodoItem: Identifiable, Codable {
     let id: UUID
     var text: String
     var isCompleted: Bool
+    var recurrence: TodoRecurrence
+    var hasReminder: Bool
+    var reminderTime: Date?
+    var notificationId: String?
 
-    init(id: UUID = UUID(), text: String, isCompleted: Bool) {
+    init(
+        id: UUID = UUID(),
+        text: String,
+        isCompleted: Bool = false,
+        recurrence: TodoRecurrence = .none,
+        hasReminder: Bool = false,
+        reminderTime: Date? = nil,
+        notificationId: String? = nil
+    ) {
         self.id = id
         self.text = text
         self.isCompleted = isCompleted
+        self.recurrence = recurrence
+        self.hasReminder = hasReminder
+        self.reminderTime = reminderTime
+        self.notificationId = notificationId
     }
 }
